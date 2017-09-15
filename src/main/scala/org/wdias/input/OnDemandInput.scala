@@ -15,10 +15,17 @@ import com.typesafe.config.ConfigFactory
 import java.io.IOException
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import com.paulgoldbaum.influxdbclient.Parameter.{Consistency, Precision}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.math._
 import spray.json.DefaultJsonProtocol
+import com.paulgoldbaum.influxdbclient._
+import scala.util.{Success, Failure}
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
+import scala.concurrent.duration._
 
 case class Station(name: String, latitude: Double, longitude: Double)
 
@@ -40,16 +47,29 @@ trait Service extends Protocols {
   def config: Config
   val logger: LoggingAdapter
 
-  def storeObservedData(data: MetaData): Either[String, MetaData] = {
-    if(data.source == "WeatherStation") Right(data)
-    else Left("Source Not handling")
+  def storeObservedData(data: MetaData): MetaData = {
+    val influxdb = InfluxDB.connect("localhost", 8086)
+    logger.info(data.source)
+    val database = influxdb.selectDatabase("curw")
+    val point = Point("observed")
+      .addTag("station", data.station.name)
+      .addTag("type", data.`type`)
+      .addTag("source", data.source)
+      .addTag("unit", data.unit.unit)
+
+      .addField("value", 0.3)
+
+    val result = Await.ready(database.write(point), 10 seconds)
+    data
   }
 
   val routes = {
     logRequestResult("on-demand-input") {
       pathPrefix("observed") {
         (post & entity(as[MetaData])) { observedData =>
-          complete(observedData)
+          val response = storeObservedData(observedData)
+          logger.info(observedData.source)
+          complete(response)
         }
       }
     }
