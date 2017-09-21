@@ -36,37 +36,35 @@ trait Service1 extends Protocols {
   def config: Config
   val logger: LoggingAdapter
 
-  def getObservedData(query: MetaData): MetaData = {
+  def createResponse(metaData: MetaData, result: QueryResult): TimeSeriesEnvelop = {
+    val timeSeries = TimeSeries(Array(DataPoint("2017-09-01 00:00:00", 1.2)))
+      .addDataPoint(DataPoint("2017-09-01 01:00:00", 1.3))
+    println("Created Response TimeSeries")
+    TimeSeriesEnvelop(metaData, timeSeries)
+  }
+
+  def getObservedData(query: MetaData): Future[TimeSeriesEnvelop] = {
     val influxdb = InfluxDB.connect("localhost", 8086)
     logger.info(query.source)
     val database = influxdb.selectDatabase("curw")
-//    val point = Point("observed")
-//      .addTag("station", data.station.name)
-//      .addTag("type", data.`type`)
-//      .addTag("source", data.source)
-//      .addTag("unit", data.unit.unit)
-
 
 //    val influxQuery = "SELECT * FROM observed"
     val queryResult = database.query("SELECT * FROM observed")
-    queryResult.onComplete({
-      case Success(result) => {
-        println(result.series.head.points("value"))
-      }
-      case Failure(exception) => {
-        println("An error has occurred: " + exception.getMessage)
-      }
-    })
-    println("Function return")
-    query
+
+    queryResult map { result =>
+      println(result.series.head.points("value"))
+      createResponse(query, result)
+    }
   }
 
   val routes = {
     logRequestResult("rest-api") {
-      pathPrefix("observed") {
+      path("observed") {
         (post & entity(as[MetaData])) { query ⇒
           val response = getObservedData(query)
-          complete(response)
+          onSuccess(response) { result =>
+            complete(result)
+          }
         }
       }
     }
