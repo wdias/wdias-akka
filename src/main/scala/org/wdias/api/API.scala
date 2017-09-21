@@ -26,6 +26,7 @@ import scala.util.{Success, Failure}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
+import org.wdias.constant._
 
 trait Service1 extends Protocols {
   implicit val system: ActorSystem
@@ -35,28 +36,36 @@ trait Service1 extends Protocols {
   def config: Config
   val logger: LoggingAdapter
 
-  def storeObservedData(data: MetaData): MetaData = {
+  def getObservedData(query: MetaData): MetaData = {
     val influxdb = InfluxDB.connect("localhost", 8086)
-    logger.info(data.source)
+    logger.info(query.source)
     val database = influxdb.selectDatabase("curw")
-    val point = Point("observed")
-      .addTag("station", data.station.name)
-      .addTag("type", data.`type`)
-      .addTag("source", data.source)
-      .addTag("unit", data.unit.unit)
+//    val point = Point("observed")
+//      .addTag("station", data.station.name)
+//      .addTag("type", data.`type`)
+//      .addTag("source", data.source)
+//      .addTag("unit", data.unit.unit)
 
-      .addField("value", 0.3)
 
-    val result = Await.ready(database.write(point), 10 seconds)
-    data
+//    val influxQuery = "SELECT * FROM observed"
+    val queryResult = database.query("SELECT * FROM observed")
+    queryResult.onComplete({
+      case Success(result) => {
+        println(result.series.head.points("value"))
+      }
+      case Failure(exception) => {
+        println("An error has occurred: " + exception.getMessage)
+      }
+    })
+    println("Function return")
+    query
   }
 
   val routes = {
-    logRequestResult("on-demand-input") {
+    logRequestResult("rest-api") {
       pathPrefix("observed") {
-        (post & entity(as[MetaData])) { observedData =>
-          val response = storeObservedData(observedData)
-          logger.info(observedData.source)
+        (post & entity(as[MetaData])) { query ⇒
+          val response = getObservedData(query)
           complete(response)
         }
       }
