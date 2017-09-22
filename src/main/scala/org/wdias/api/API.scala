@@ -91,5 +91,5 @@ object API extends App with Service1 {
   override val config = ConfigFactory.load()
   override val logger = Logging(system, getClass)
 
-  Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port"))
+  Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port1"))
 }
