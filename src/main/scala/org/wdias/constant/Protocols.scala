@@ -13,7 +13,7 @@ case class MetaData(station: Station, `type`: String, source: String, unit: Unit
 
 case class DataPoint(time: String, value: Double)
 
-case class TimeSeries(timeSeries: Array[DataPoint] = Array()) {
+case class TimeSeries(timeSeries: List[DataPoint] = List()) {
   def addDataPoint(time: String, value:Double) = copy(timeSeries = timeSeries :+ DataPoint(time, value))
   def addDataPoint(dataPoint: DataPoint) = copy(timeSeries =  timeSeries :+ dataPoint)
   def addDataPoints(dataPoints: Array[DataPoint]) = copy(timeSeries =  timeSeries ++ dataPoints)

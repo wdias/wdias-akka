@@ -13,6 +13,8 @@ import akka.stream.scaladsl.{Flow, Sink, Source}
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.io.IOException
+import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, LocalDateTime}
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import com.paulgoldbaum.influxdbclient.Parameter.{Consistency, Precision}
@@ -21,8 +23,8 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.math._
 import spray.json.DefaultJsonProtocol
 import com.paulgoldbaum.influxdbclient._
-import scala.util.{Success, Failure}
 
+import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -37,8 +39,18 @@ trait Service1 extends Protocols {
   val logger: LoggingAdapter
 
   def createResponse(metaData: MetaData, result: QueryResult): TimeSeriesEnvelop = {
-    val timeSeries = TimeSeries(Array(DataPoint("2017-09-01 00:00:00", 1.2)))
-      .addDataPoint(DataPoint("2017-09-01 01:00:00", 1.3))
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+    var points: List[DataPoint] = List()
+    val records: List[Record] = result.series.head.records
+    records.foreach { record =>
+      println(record.allValues)
+      val dateTimeStr: String = record.allValues(0).toString.split('.')(0)
+      val dateTime = LocalDateTime.parse(dateTimeStr)
+      val value: Double = record.allValues(5).toString.toDouble
+      points = points :+ DataPoint(dateTime.format(formatter), value)
+    }
+    val timeSeries = TimeSeries(points)
     println("Created Response TimeSeries")
     TimeSeriesEnvelop(metaData, timeSeries)
   }
@@ -52,7 +64,7 @@ trait Service1 extends Protocols {
     val queryResult = database.query("SELECT * FROM observed")
 
     queryResult map { result =>
-      println(result.series.head.points("value"))
+      println(result.series.head.points("time"))
       createResponse(query, result)
     }
   }
