@@ -57,9 +57,9 @@ trait Service extends Protocols {
       points = points :+ p
     }
 
-    val bulkWrite = database.bulkWrite(points)
+    val bulkWrite = database.bulkWrite(points, precision = Precision.SECONDS)
     bulkWrite map { isWritten =>
-      println(isWritten)
+      println("Written to the DB: " + isWritten)
       isWritten
     }
   }

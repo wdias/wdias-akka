@@ -45,7 +45,7 @@ trait Service1 extends Protocols {
     val records: List[Record] = result.series.head.records
     records.foreach { record =>
       println(record.allValues)
-      val dateTimeStr: String = record.allValues(0).toString.split('.')(0)
+      val dateTimeStr: String = record.allValues(0).toString.split('Z')(0)
       val dateTime = LocalDateTime.parse(dateTimeStr)
       val value: Double = record.allValues(5).toString.toDouble
       points = points :+ DataPoint(dateTime.format(formatter), value)
