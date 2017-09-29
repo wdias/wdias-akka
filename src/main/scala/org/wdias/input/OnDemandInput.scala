@@ -9,14 +9,17 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.{ActorMaterializer, Materializer}
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, Framing, Sink, Source}
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.io.IOException
 import java.time.{LocalDateTime, ZoneId}
 import java.time.format.DateTimeFormatter
 
+import akka.Done
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.server.directives.FileInfo
+import akka.util.ByteString
 import com.paulgoldbaum.influxdbclient.Parameter.{Consistency, Precision}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -32,10 +35,13 @@ import org.wdias.constant._
 
 trait Service extends Protocols {
   implicit val system: ActorSystem
+
   implicit def executor: ExecutionContextExecutor
+
   implicit val materializer: Materializer
 
   def config: Config
+
   val logger: LoggingAdapter
 
   def storeObservedData(data: TimeSeriesEnvelop): Future[Boolean] = {
@@ -46,7 +52,7 @@ trait Service extends Protocols {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     val zoneId = ZoneId.systemDefault
     data.timeSeries.timeSeries.foreach { tt: DataPoint =>
-      val dateTime:LocalDateTime = LocalDateTime.parse(tt.time, formatter)
+      val dateTime: LocalDateTime = LocalDateTime.parse(tt.time, formatter)
       val p = Point("observed", dateTime.atZone(zoneId).toEpochSecond())
         .addTag("station", metaData.station.name)
         .addTag("type", metaData.`type`)
@@ -64,21 +70,80 @@ trait Service extends Protocols {
     }
   }
 
+  def storeFileData(metadata: FileInfo, byteSource: Source[ByteString, Any]): Future[Boolean] = {
+    println("File Metadata: ", metadata)
+    val influxdb = InfluxDB.connect("localhost", 8086)
+    val database = influxdb.selectDatabase("curw")
+//    val metaData: MetaData = metaData
+    var points: List[Point] = List()
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    val zoneId = ZoneId.systemDefault
+
+    val splitLines = Framing.delimiter(ByteString("\n"), 1024, allowTruncation = true)
+    val done: Future[Done] = byteSource
+      .via(splitLines)
+      .map(_.utf8String.split(",").toVector)
+      .runForeach(line => {
+        println("line", line)
+        val dateTime: LocalDateTime = LocalDateTime.parse(line(0), formatter)
+        val p = Point("observed", dateTime.atZone(zoneId).toEpochSecond())
+          .addTag("station", "Hanwella")
+          .addTag("type", "Observed")
+          .addTag("source", "WeatherStation")
+          .addTag("unit", "mm")
+          .addField("value", line(1))
+
+        points = points :+ p
+      })
+    done.transform {
+      case Success(isDone) => {
+        println("Gathered points", isDone)
+        println("num points:", points.length)
+        val bulkWrite = database.bulkWrite(points, precision = Precision.SECONDS)
+        val wrote = bulkWrite map { isWritten =>
+          println("Written to the DB: " + isWritten)
+          isWritten
+        }
+        Await.result(wrote, 1000 seconds)
+        Success(true)
+      }
+      case Failure(err) => {
+        println("failed, ", err)
+        println("num points:", points.length)
+        Success(true)
+      }
+
+    }
+  }
+
   val routes = {
-    logRequestResult("on-demand-input") {
-      pathPrefix("observed") {
-        (post & entity(as[TimeSeriesEnvelop])) { observedData =>
-          val response = storeObservedData(observedData)
-          onSuccess(response) { result =>
-            if(result) {
-              complete("Success")
-            } else {
-              complete("Fail")
+    pathPrefix("observed") {
+      (post & entity(as[TimeSeriesEnvelop])) { observedData =>
+        val response = storeObservedData(observedData)
+        onSuccess(response) { result =>
+          if (result) {
+            complete("Success")
+          } else {
+            complete("Fail")
+          }
+        }
+      }
+    } ~
+      pathPrefix("file") {
+        fileUpload("file") {
+          case (metadata, byteSource) => {
+            val response: Future[Boolean] = storeFileData(metadata, byteSource)
+            onSuccess(response) { result =>
+              println(">>>>", result)
+              if (result) {
+                complete("Success")
+              } else {
+                complete("Fail")
+              }
             }
           }
         }
       }
-    }
   }
 }
 
