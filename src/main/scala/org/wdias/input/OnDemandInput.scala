@@ -70,11 +70,11 @@ trait Service extends Protocols {
     }
   }
 
-  def storeFileData(metadata: FileInfo, byteSource: Source[ByteString, Any]): Future[Boolean] = {
-    println("File Metadata: ", metadata)
+  def storeFileData(metaData: FileInfo, byteSource: Source[ByteString, Any]): Future[Boolean] = {
+    println("File Metadata: ", metaData)
     val influxdb = InfluxDB.connect("localhost", 8086)
     val database = influxdb.selectDatabase("curw")
-//    val metaData: MetaData = metaData
+    //    val metaData: MetaData = metaData
     var points: List[Point] = List()
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     val zoneId = ZoneId.systemDefault
@@ -95,25 +95,8 @@ trait Service extends Protocols {
 
         points = points :+ p
       })
-    done.transform {
-      case Success(isDone) => {
-        println("Gathered points", isDone)
-        println("num points:", points.length)
-        val bulkWrite = database.bulkWrite(points, precision = Precision.SECONDS)
-        val wrote = bulkWrite map { isWritten =>
-          println("Written to the DB: " + isWritten)
-          isWritten
-        }
-        Await.result(wrote, 1000 seconds)
-        Success(true)
-      }
-      case Failure(err) => {
-        println("failed, ", err)
-        println("num points:", points.length)
-        Success(true)
-      }
-
-    }
+    val isWritten: Future[Boolean] = done.flatMap(_ => database.bulkWrite(points, precision = Precision.SECONDS))
+    isWritten
   }
 
   val routes = {
