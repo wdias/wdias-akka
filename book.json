@@ -1,5 +1,6 @@
 {
   "title": "WDIAS",
+  "root": "./docs",
   "plugins": ["edit-link", "prism", "-highlight", "github", "anchorjs", "algolia"],
   "pluginsConfig": {
     "edit-link": {
