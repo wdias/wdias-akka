@@ -1,0 +1,13 @@
+{
+  "title": "WDIAS",
+  "plugins": ["edit-link", "prism", "-highlight", "github", "anchorjs", "algolia"],
+  "pluginsConfig": {
+    "edit-link": {
+      "base": "https://github.com/wdias/wdias/tree/master",
+      "label": "Edit This Page"
+    },
+    "github": {
+      "url": "https://github.com/wdias/wdias/"
+    }
+  }
+}
