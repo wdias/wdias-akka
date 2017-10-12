@@ -50,9 +50,9 @@ trait Service1 extends Protocols {
       val value: Double = record.allValues(5).toString.toDouble
       points = points :+ DataPoint(dateTime.format(formatter), value)
     }
-    val timeSeries = TimeSeries(points)
+    val timeSeries = Some(TimeSeries(points))
     println("Created Response TimeSeries")
-    TimeSeriesEnvelop(metaData, timeSeries)
+    TimeSeriesEnvelop(metaData, timeSeries, None)
   }
 
   def getObservedData(query: MetaData): Future[TimeSeriesEnvelop] = {

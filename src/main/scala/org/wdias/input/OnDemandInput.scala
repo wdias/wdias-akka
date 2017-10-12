@@ -51,7 +51,7 @@ trait Service extends Protocols {
     var points: List[Point] = List()
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     val zoneId = ZoneId.systemDefault
-    data.timeSeries.timeSeries.foreach { tt: DataPoint =>
+    data.timeSeries.get.timeSeries.foreach { tt: DataPoint =>
       val dateTime: LocalDateTime = LocalDateTime.parse(tt.time, formatter)
       val p = Point("observed", dateTime.atZone(zoneId).toEpochSecond())
         .addTag("station", metaData.station.name)
@@ -70,8 +70,8 @@ trait Service extends Protocols {
     }
   }
 
-  def storeFileData(metaData: FileInfo, byteSource: Source[ByteString, Any]): Future[Boolean] = {
-    println("File Metadata: ", metaData)
+  def storeFileData(fileInfo: FileInfo, byteSource: Source[ByteString, Any]): Future[Boolean] = {
+    println("File Metadata: ", fileInfo)
     val influxdb = InfluxDB.connect("localhost", 8086)
     val database = influxdb.selectDatabase("curw")
     //    val metaData: MetaData = metaData
@@ -114,8 +114,8 @@ trait Service extends Protocols {
     } ~
       pathPrefix("file") {
         fileUpload("file") {
-          case (metadata, byteSource) => {
-            val response: Future[Boolean] = storeFileData(metadata, byteSource)
+          case (fileInfo, byteSource) => {
+            val response: Future[Boolean] = storeFileData(fileInfo, byteSource)
             onSuccess(response) { result =>
               println(">>>>", result)
               if (result) {

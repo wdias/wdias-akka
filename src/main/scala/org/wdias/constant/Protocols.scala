@@ -19,7 +19,9 @@ case class TimeSeries(timeSeries: List[DataPoint] = List()) {
   def addDataPoints(dataPoints: Array[DataPoint]) = copy(timeSeries =  timeSeries ++ dataPoints)
 }
 
-case class TimeSeriesEnvelop(metaData: MetaData, timeSeries: TimeSeries)
+case class DataLocation(dateType: String, fileType: String, location: String)
+
+case class TimeSeriesEnvelop(metaData: MetaData, timeSeries: Option[TimeSeries], dataLocation: Option[DataLocation])
 
 trait Protocols extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val stationFormat = jsonFormat3(Station.apply)
@@ -27,5 +29,6 @@ trait Protocols extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val metaDataFormat = jsonFormat5(MetaData.apply)
   implicit val pointFormat = jsonFormat2(DataPoint.apply)
   implicit val timeSeriesFormat = jsonFormat1(TimeSeries.apply)
-  implicit val timeSeriesEnvelopFormat = jsonFormat2(TimeSeriesEnvelop.apply)
+  implicit val dataLocationFormat = jsonFormat3(DataLocation.apply)
+  implicit val timeSeriesEnvelopFormat = jsonFormat3(TimeSeriesEnvelop.apply)
 }
