@@ -1,8 +1,7 @@
 {
-  "gitbook": "3.2.2",
   "title": "WDIAS",
   "root": "./docs",
-  "plugins": ["edit-link", "prism", "-highlight", "github", "anchorjs", "algolia"],
+  "plugins": ["edit-link",  "github"],
   "pluginsConfig": {
     "edit-link": {
       "base": "https://github.com/wdias/wdias/tree/master",
