@@ -9,15 +9,18 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.{ActorMaterializer, Materializer}
-import akka.stream.scaladsl.{Flow, Framing, Sink, Source}
+import akka.stream.scaladsl.{FileIO, Flow, Framing, Sink, Source}
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.file.Paths
 import java.time.{LocalDateTime, ZoneId}
 import java.time.format.DateTimeFormatter
 
 import akka.Done
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.server.ContentNegotiator.Alternative.ContentType
 import akka.http.scaladsl.server.directives.FileInfo
 import akka.util.ByteString
 import com.paulgoldbaum.influxdbclient.Parameter.{Consistency, Precision}
@@ -99,11 +102,47 @@ trait Service extends Protocols {
     isWritten
   }
 
+  def fetchFileData(fetchInfo: TimeSeriesEnvelop): Future[Boolean] = {
+    val influxdb = InfluxDB.connect("localhost", 8086)
+    val database = influxdb.selectDatabase("curw")
+    val metaData: MetaData = fetchInfo.metaData
+    var points: List[Point] = List()
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    val zoneId = ZoneId.systemDefault
+
+    val splitLines = Framing.delimiter(ByteString("\n"), 1024, allowTruncation = true)
+    val responseFuture: Future[HttpResponse] =
+      Http().singleRequest(HttpRequest(uri = fetchInfo.dataLocation.get.location))
+    val done: Future[Done] = responseFuture.flatMap { response =>
+      val source = response.entity.dataBytes
+      source.via(splitLines)
+        .map(_.utf8String)
+        .runForeach(line => {
+          val lineSplit = line.split(",")
+          if (Character.isDigit(lineSplit(0).charAt(0))) {
+            val tt: DataPoint = DataPoint(lineSplit(0), lineSplit(1).toDouble)
+            val dateTime: LocalDateTime = LocalDateTime.parse(tt.time, formatter)
+            val p = Point("observed", dateTime.atZone(zoneId).toEpochSecond())
+              .addTag("station", metaData.station.name)
+              .addTag("type", metaData.`type`)
+              .addTag("source", metaData.source)
+              .addTag("unit", metaData.unit.unit)
+              .addField("value", tt.value)
+
+            points = points :+ p
+          }
+        })
+    }
+    val isWritten: Future[Boolean] = done.flatMap(_ => database.bulkWrite(points, precision = Precision.SECONDS))
+    isWritten
+  }
+
   val routes = {
     pathPrefix("observed") {
       (post & entity(as[TimeSeriesEnvelop])) { observedData =>
         val response = storeObservedData(observedData)
         onSuccess(response) { result =>
+          println("RESULT::observed", result)
           if (result) {
             complete("Success")
           } else {
@@ -117,12 +156,25 @@ trait Service extends Protocols {
           case (fileInfo, byteSource) => {
             val response: Future[Boolean] = storeFileData(fileInfo, byteSource)
             onSuccess(response) { result =>
-              println(">>>>", result)
+              println("RESULT::file", result)
               if (result) {
                 complete("Success")
               } else {
                 complete("Fail")
               }
+            }
+          }
+        }
+      } ~
+      pathPrefix("fetch") {
+        (post & entity(as[TimeSeriesEnvelop])) { fetchInfo =>
+          val response: Future[Boolean] = fetchFileData(fetchInfo)
+          onSuccess(response) { result =>
+            println("RESULT::fetch", result)
+            if (result) {
+              complete("Success")
+            } else {
+              complete("Fail")
             }
           }
         }
