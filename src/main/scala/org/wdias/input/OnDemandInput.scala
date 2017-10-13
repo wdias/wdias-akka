@@ -36,6 +36,10 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import org.wdias.constant._
 
+import sys.process._
+import java.net.URL
+import java.io.File
+
 trait Service extends Protocols {
   implicit val system: ActorSystem
 
@@ -103,6 +107,8 @@ trait Service extends Protocols {
   }
 
   def fetchFileData(fetchInfo: TimeSeriesEnvelop): Future[Boolean] = {
+    new URL("http://www.curwsl.org:8080/FLO2D/WL/water_level-2017-10-06.zip") #> new File("/tmp/water_level-2017-10-06.zip") !!
+
     val influxdb = InfluxDB.connect("localhost", 8086)
     val database = influxdb.selectDatabase("curw")
     val metaData: MetaData = fetchInfo.metaData
