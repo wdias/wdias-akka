@@ -1,3 +1,5 @@
+package org.wdias.input
+
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.Http
@@ -42,14 +44,11 @@ import java.io.File
 
 trait Service extends Protocols {
   implicit val system: ActorSystem
-
   implicit def executor: ExecutionContextExecutor
-
   implicit val materializer: Materializer
 
   def config: Config
-
-  val logger: LoggingAdapter
+//  val logger: LoggingAdapter
 
   def storeObservedData(data: TimeSeriesEnvelop): Future[Boolean] = {
     val influxdb = InfluxDB.connect("localhost", 8086)
@@ -107,7 +106,7 @@ trait Service extends Protocols {
   }
 
   def fetchFileData(fetchInfo: TimeSeriesEnvelop): Future[Boolean] = {
-    new URL("http://www.curwsl.org:8080/FLO2D/WL/water_level-2017-10-06.zip") #> new File("/tmp/water_level-2017-10-06.zip") !!
+    // new URL("http://www.curwsl.org:8080/FLO2D/WL/water_level-2017-10-06.zip") #> new File("/tmp/water_level-2017-10-06.zip") !!
 
     val influxdb = InfluxDB.connect("localhost", 8086)
     val database = influxdb.selectDatabase("curw")
@@ -145,15 +144,9 @@ trait Service extends Protocols {
 
   val routes = {
     pathPrefix("observed") {
-      (post & entity(as[TimeSeriesEnvelop])) { observedData =>
-        val response = storeObservedData(observedData)
-        onSuccess(response) { result =>
-          println("RESULT::observed", result)
-          if (result) {
-            complete("Success")
-          } else {
-            complete("Fail")
-          }
+      (post & entity(as[TimeSeriesEnvelop])) { timeSeriesEnvelop =>
+        onSuccess(storeObservedData(timeSeriesEnvelop)) { result: Boolean =>
+          complete(Created -> s"Success $result")
         }
       }
     } ~
@@ -189,12 +182,21 @@ trait Service extends Protocols {
 }
 
 object OnDemandInput extends App with Service {
-  override implicit val system = ActorSystem()
+  override implicit val system = ActorSystem("input-api")
   override implicit val executor = system.dispatcher
   override implicit val materializer = ActorMaterializer()
 
   override val config = ConfigFactory.load()
-  override val logger = Logging(system, getClass)
+//  override val logger = Logging(system, getClass)
 
-  Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port"))
+  val bindingFuture = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port"))
+
+  println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+  scala.io.StdIn.readLine()
+
+  bindingFuture
+    .flatMap(_.unbind())
+    .onComplete(_ => system.terminate()foreach { _ =>
+      println("Actor system was shut down")
+    })
 }
