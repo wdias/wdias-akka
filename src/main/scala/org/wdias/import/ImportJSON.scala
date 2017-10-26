@@ -4,7 +4,7 @@ import java.time.{LocalDateTime, ZoneId}
 import java.time.format.DateTimeFormatter
 
 import akka.Done
-import akka.pattern.{ask, pipe }
+import akka.pattern.{ask, pipe}
 import akka.actor.{Actor, ActorIdentity, ActorRef, Identify}
 import akka.http.scaladsl.server.directives.FileInfo
 import akka.stream.scaladsl.{Framing, Source}
@@ -27,6 +27,7 @@ object ImportJSON {
 }
 
 class ImportJSON extends Actor {
+
     import ImportJSON._
 
     import context.dispatcher
