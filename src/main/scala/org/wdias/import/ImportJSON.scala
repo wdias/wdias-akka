@@ -5,7 +5,7 @@ import java.time.format.DateTimeFormatter
 
 import akka.Done
 import akka.pattern.{ask, pipe}
-import akka.actor.{Actor, ActorIdentity, ActorRef, Identify}
+import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.http.scaladsl.server.directives.FileInfo
 import akka.stream.scaladsl.{Framing, Source}
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
@@ -26,7 +26,7 @@ object ImportJSON {
 
 }
 
-class ImportJSON extends Actor {
+class ImportJSON extends Actor with ActorLogging {
 
     import ImportJSON._
 
@@ -39,7 +39,6 @@ class ImportJSON extends Actor {
 
     def receive: Receive = {
         case ImportJSONData(timeSeriesEnvelop) =>
-            val senderRef = sender()
             /*adapterRef ? StoreTimeSeries(timeSeriesEnvelop) map {
                 case StoreSuccess(metadata) =>
                     println("On StoreSuccess", metadata)
@@ -48,8 +47,10 @@ class ImportJSON extends Actor {
                     println("On StoreFailure")
                     senderRef ! "failed"
             }*/
-            val response: Future[StoreSuccess] = (adapterRef ? StoreTimeSeries(timeSeriesEnvelop)).mapTo[StoreSuccess]
-            pipe(response) to senderRef
+            /*val response: Future[StoreSuccess] = (adapterRef ? StoreTimeSeries(timeSeriesEnvelop)).mapTo[StoreSuccess]
+            pipe(response) to senderRef*/
+            log.debug("Forwarding ImportJSONData > ", adapterRef)
+            adapterRef forward StoreTimeSeries(timeSeriesEnvelop)
         case ActorIdentity(_, Some(ref)) =>
             println("Set Adapter", ref)
             adapterRef = ref

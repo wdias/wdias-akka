@@ -213,7 +213,7 @@ object OnDemandInput extends App with Service {
     override val config = ConfigFactory.load()
     //  override val logger = Logging(system, getClass)
 
-    val bindingFuture = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port"))
+    val bindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port"))
 
     println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
     scala.io.StdIn.readLine()

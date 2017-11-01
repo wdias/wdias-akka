@@ -3,12 +3,14 @@ package org.wdias.adapter
 import java.time.{LocalDateTime, ZoneId}
 import java.time.format.DateTimeFormatter
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorLogging}
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
+
+import scala.concurrent.Future
+import akka.pattern.{ask, pipe}
 // Check to Run in Actor Context
 import scala.concurrent.ExecutionContext.Implicits.global
 import com.paulgoldbaum.influxdbclient.{InfluxDB, Point, QueryResult, Record}
-import org.wdias.adapter.Adapter._
 import org.wdias.constant._
 
 object Adapter {
@@ -25,7 +27,10 @@ object Adapter {
 
 }
 
-class Adapter extends Actor {
+class Adapter extends Actor with ActorLogging {
+
+    import Adapter._
+
     def createResponse(metaData: MetaData, result: QueryResult): TimeSeriesEnvelop = {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
@@ -43,10 +48,9 @@ class Adapter extends Actor {
         TimeSeriesEnvelop(metaData, timeSeries, None)
     }
 
-    def receive = {
+    def receive: Receive = {
         case StoreTimeSeries(data) =>
-            val senderRef = sender()
-
+            log.info("StoringTimeSeries... {}", sender())
             val influxdb = InfluxDB.connect("localhost", 8086)
             val database = influxdb.selectDatabase("curw")
             val metaData: MetaData = data.metaData
@@ -65,15 +69,15 @@ class Adapter extends Actor {
                 points = points :+ p
             }
 
-            val bulkWrite = database.bulkWrite(points, precision = Precision.SECONDS)
-            bulkWrite map { isWritten =>
+            pipe(database.bulkWrite(points, precision = Precision.SECONDS).mapTo[Boolean] map { isWritten =>
                 println("Written to the DB: " + isWritten)
                 if (isWritten) {
-                    senderRef ! StoreSuccess(metaData)
+                    log.info("Data written to DB Success.")
+                    StoreSuccess(metaData)
                 } else {
-                    senderRef ! StoreFailure()
+                    StoreFailure()
                 }
-            }
+            }) to sender()
 
         case GetTimeSeries(query) =>
             val influxdb = InfluxDB.connect("localhost", 8086)
