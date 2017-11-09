@@ -87,9 +87,8 @@ class Adapter extends Actor with ActorLogging {
             //    val influxQuery = "SELECT * FROM observed"
             val queryResult = database.query("SELECT * FROM observed")
 
-            queryResult map { result =>
-                println(result.series.head.points("time"))
-                sender() ! createResponse(query, result)
-            }
+            pipe(queryResult.mapTo[QueryResult] map { result =>
+                Result(createResponse(query, result))
+            }) to sender()
     }
 }

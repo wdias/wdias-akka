@@ -1,23 +1,14 @@
 package org.wdias.`import`
 
-import java.time.{LocalDateTime, ZoneId}
 import java.time.format.DateTimeFormatter
+import java.time.{LocalDateTime, ZoneId}
 
-import akka.Done
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
-import akka.http.scaladsl.server.directives.FileInfo
-import akka.stream.scaladsl.{Framing, Source}
-import akka.util.{ByteString, Timeout}
-import akka.pattern.{ask, pipe}
-import akka.stream.ActorMaterializer
-import com.paulgoldbaum.influxdbclient.Parameter.Precision
-import com.paulgoldbaum.influxdbclient.Point
-import org.wdias.adapter.Adapter.{StoreFailure, StoreSuccess, StoreTimeSeries}
+import akka.util.Timeout
+import org.wdias.adapter.Adapter.StoreTimeSeries
 import org.wdias.constant._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.duration._
-import scala.concurrent.Future
 
 object ImportCSV {
 

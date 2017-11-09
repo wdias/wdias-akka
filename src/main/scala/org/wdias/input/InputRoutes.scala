@@ -1,7 +1,5 @@
 package org.wdias.input
 
-import java.time.LocalDateTime
-
 import akka.Done
 import akka.actor.{ActorRef, ActorSystem}
 import akka.event.Logging
@@ -12,9 +10,8 @@ import akka.http.scaladsl.server.directives.MethodDirectives.post
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Framing, Source}
+import akka.stream.scaladsl.Framing
 import akka.util.{ByteString, Timeout}
-import com.paulgoldbaum.influxdbclient.Point
 import org.wdias.`import`.ImportCSV.ImportCSVFile
 import org.wdias.`import`.ImportJSON.ImportJSONData
 import org.wdias.adapter.Adapter.StoreSuccess
@@ -53,7 +50,7 @@ trait InputRoutes extends Protocols {
       pathPrefix("file") {
         formField('metaData.as[MetaData]) { metaData =>
           fileUpload("csv") {
-            case (_, byteSource) => {
+            case (_, byteSource) =>
               val splitLines = Framing.delimiter(ByteString("\n"), 1024, allowTruncation = true)
               var lines: Array[String] = Array()
               log.debug("Got file request")
@@ -69,7 +66,6 @@ trait InputRoutes extends Protocols {
                   complete(Created -> result.metadata)
                 }
               }
-            }
           }
         }
       },
