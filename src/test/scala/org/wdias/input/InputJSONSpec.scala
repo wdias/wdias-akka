@@ -31,7 +31,7 @@ class InputJSONSpec extends WordSpec
 
     "OnDemandInput" should {
         "return success for POST request with valid JSON data" in {
-            val metaData: MetaData = new MetaData(Station("Hanwella", 6.90, 80.08), "Observed", "HEC-HMS", Unit("m3/s", "Instantaneous"), Array("Test1"))
+            val metaData: MetaData = new MetaData(Station("Hanwella", 6.90, 80.08), "Observed", "HEC-HMS", Unit("m3/s", "Instantaneous"), "Precipitation", Array("Test1"))
             val timeseries: TimeSeries = new TimeSeries(List(
                 new DataPoint("2017-09-15 00:00:00", 0.0),
                 new DataPoint("2017-09-15 01:00:00", 0.1),

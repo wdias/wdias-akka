@@ -64,6 +64,7 @@ class Adapter extends Actor with ActorLogging {
                     .addTag("type", metaData.`type`)
                     .addTag("source", metaData.source)
                     .addTag("unit", metaData.unit.unit)
+                    .addTag("variable", metaData.variable)
                     .addField("value", tt.value)
 
                 points = points :+ p

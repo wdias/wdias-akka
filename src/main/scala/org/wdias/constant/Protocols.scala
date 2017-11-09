@@ -9,7 +9,7 @@ case class Station(name: String, latitude: Double, longitude: Double)
 
 case class Unit(unit: String, `type`: String)
 
-case class MetaData(station: Station, `type`: String, source: String, unit: Unit, tags: Array[String])
+case class MetaData(station: Station, `type`: String, source: String, unit: Unit, variable:String, tags: Array[String])
 
 case class DataPoint(time: String, value: Double)
 
@@ -28,7 +28,7 @@ case class TimeSeriesEnvelop(metaData: MetaData, timeSeries: Option[TimeSeries],
 trait Protocols extends SprayJsonSupport with DefaultJsonProtocol {
     implicit val stationFormat = jsonFormat3(Station.apply)
     implicit val unitFormat = jsonFormat2(Unit.apply)
-    implicit val metaDataFormat = jsonFormat5(MetaData.apply)
+    implicit val metaDataFormat = jsonFormat6(MetaData.apply)
     implicit val pointFormat = jsonFormat2(DataPoint.apply)
     implicit val timeSeriesFormat = jsonFormat1(TimeSeries.apply)
     implicit val dataLocationFormat = jsonFormat3(DataLocation.apply)
