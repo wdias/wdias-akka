@@ -72,6 +72,14 @@ trait InputRoutes extends Protocols {
             }
           }
         }
+      },
+      pathPrefix("fetch") {
+        (post & entity(as[TimeSeriesEnvelop])) { fetchInfo =>
+          val response: Future[StoreSuccess] = (importJSONRef ? ImportJSONData(fetchInfo)).mapTo[StoreSuccess]
+          onSuccess(response) { result =>
+            complete(Created -> result.metadata)
+          }
+        }
       }
     )
   }
