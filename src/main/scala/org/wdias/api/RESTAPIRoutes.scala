@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import org.wdias.adapter.Adapter.{Result, StoreSuccess}
+import org.wdias.adapter.Adapter.Result
 import org.wdias.constant.{MetaData, Protocols}
 import org.wdias.export.ExportJSON.ExportJSONData
 import org.wdias.input.InputRoutes

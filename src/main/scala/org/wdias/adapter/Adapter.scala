@@ -1,21 +1,24 @@
 package org.wdias.adapter
 
-import java.time.{LocalDateTime, ZoneId}
 import java.time.format.DateTimeFormatter
+import java.time.{LocalDateTime, ZoneId}
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
+import akka.pattern.pipe
+import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
-
-import scala.concurrent.Future
-import akka.pattern.{ask, pipe}
+import org.wdias.extensions.ExtensionHandler.{ExtensionHandlerData, ExtensionHandlerResult}
 // Check to Run in Actor Context
-import scala.concurrent.ExecutionContext.Implicits.global
 import com.paulgoldbaum.influxdbclient.{InfluxDB, Point, QueryResult, Record}
 import org.wdias.constant._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object Adapter {
 
     case class StoreTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
+    case class StoreValidatedTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
 
     case class GetTimeSeries(metaData: MetaData)
 
@@ -30,6 +33,11 @@ object Adapter {
 class Adapter extends Actor with ActorLogging {
 
     import Adapter._
+
+    implicit val timeout: Timeout = Timeout(15 seconds)
+
+    var extensionHandlerRef: ActorRef = _
+    context.actorSelection("/user/extensionHandler") ! Identify(None)
 
     def createResponse(metaData: MetaData, result: QueryResult): TimeSeriesEnvelop = {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
@@ -74,11 +82,16 @@ class Adapter extends Actor with ActorLogging {
                 println("Written to the DB: " + isWritten)
                 if (isWritten) {
                     log.info("Data written to DB Success.")
+                    log.info("Send Data to Extension Handler: {}", extensionHandlerRef)
+                    extensionHandlerRef ! ExtensionHandlerData(data)
                     StoreSuccess(metaData)
                 } else {
                     StoreFailure()
                 }
             }) to sender()
+
+        case StoreValidatedTimeSeries(data) =>
+            log.info("StoreValidatedTimeSeries... {}, {}", sender(), data)
 
         case GetTimeSeries(query) =>
             val influxdb = InfluxDB.connect("localhost", 8086)
@@ -90,5 +103,13 @@ class Adapter extends Actor with ActorLogging {
             pipe(queryResult.mapTo[QueryResult] map { result =>
                 Result(createResponse(query, result))
             }) to sender()
+
+        case ActorIdentity(_, Some(ref)) =>
+            println("Set Extension Handler Ref", ref)
+            extensionHandlerRef = ref
+        case ActorIdentity(_, None) =>
+            context.stop(self)
+        case _ =>
+            log.info("Unknown message")
     }
 }
