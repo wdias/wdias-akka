@@ -45,9 +45,12 @@ class ExtensionHandler extends Actor with ActorLogging {
                 validationRef ! PoisonPill
                 StoreValidatedTimeSeries(validatedTimeseriesEnvelop.timeSeriesEnvelop)
             }) to adapterRef
+            // NOTE: Handle without using ASK
+            // validationRef ! ValidationData(validationConfig.get, timeSeriesEnvelop)
 
         case ExtensionHandlerResult(validatedTimeseriesEnvelop) =>
             log.info("Got Validated Timeseries {}", validatedTimeseriesEnvelop)
+            sender() ! PoisonPill
             adapterRef ! StoreValidatedTimeSeries(validatedTimeseriesEnvelop)
 
         case ActorIdentity(_, Some(ref)) =>
