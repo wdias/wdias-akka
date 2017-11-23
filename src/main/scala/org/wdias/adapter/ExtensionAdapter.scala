@@ -1,7 +1,8 @@
 package org.wdias.adapter
 
-import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
-import org.wdias.constant.{MetaData, TimeSeriesEnvelop}
+import akka.actor.{Actor, ActorLogging}
+import org.wdias.adapter.models._
+import org.wdias.constant.TimeSeriesEnvelop
 
 object ExtensionAdapter {
 
@@ -29,6 +30,8 @@ class ExtensionAdapter extends Actor with ActorLogging {
     def receive: Receive = {
         case GetValidationConfig(timeseriesEnvelop) =>
             log.info("GetValidationConfig:: {}, {}", timeseriesEnvelop, validationConfigs.find(_.name == timeseriesEnvelop.metaData.station.name))
+            val stationName = timeseriesEnvelop.metaData.station.name
+            LocationsDAO.create(Location(stationName, stationName))
             sender() ! ValidationConfigResult(validationConfigs.find(_.name == timeseriesEnvelop.metaData.station.name), timeseriesEnvelop)
             log.info("<<<<")
         case GetTransformationConfig(timeseriesEnvelop) =>
