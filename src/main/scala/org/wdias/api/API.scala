@@ -31,68 +31,68 @@ import scala.concurrent.duration._
 import org.wdias.constant._
 
 trait Service1 extends Protocols {
-    implicit val system: ActorSystem
+  implicit val system: ActorSystem
 
-    implicit def executor: ExecutionContextExecutor
+  implicit def executor: ExecutionContextExecutor
 
-    implicit val materializer: Materializer
+  implicit val materializer: Materializer
 
-    def config: Config
+  def config: Config
 
-    val logger: LoggingAdapter
+  val logger: LoggingAdapter
 
-    def createResponse(metaData: MetaData, result: QueryResult): TimeSeriesEnvelop = {
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+  def createResponse(metaData: MetaData, result: QueryResult): TimeSeriesEnvelop = {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
-        var points: List[DataPoint] = List()
-        val records: List[Record] = result.series.head.records
-        records.foreach { record =>
-            println(record.allValues)
-            val dateTimeStr: String = record.allValues(0).toString.split('Z')(0)
-            val dateTime = LocalDateTime.parse(dateTimeStr)
-            val value: Double = record.allValues(5).toString.toDouble
-            points = points :+ DataPoint(dateTime.format(formatter), value)
-        }
-        val timeSeries = Some(TimeSeries(points))
-        println("Created Response TimeSeries")
-        TimeSeriesEnvelop(metaData, timeSeries, None)
+    var points: List[DataPoint] = List()
+    val records: List[Record] = result.series.head.records
+    records.foreach { record =>
+      println(record.allValues)
+      val dateTimeStr: String = record.allValues(0).toString.split('Z')(0)
+      val dateTime = LocalDateTime.parse(dateTimeStr)
+      val value: Double = record.allValues(5).toString.toDouble
+      points = points :+ DataPoint(dateTime.format(formatter), value)
     }
+    val timeSeries = Some(TimeSeries(points))
+    println("Created Response TimeSeries")
+    TimeSeriesEnvelop(metaData, timeSeries, None)
+  }
 
-    def getObservedData(query: MetaData): Future[TimeSeriesEnvelop] = {
-        val influxdb = InfluxDB.connect("localhost", 8086)
-        logger.info(query.source)
-        val database = influxdb.selectDatabase("curw")
+  def getObservedData(query: MetaData): Future[TimeSeriesEnvelop] = {
+    val influxdb = InfluxDB.connect("localhost", 8086)
+    logger.info(query.source)
+    val database = influxdb.selectDatabase("curw")
 
-        //    val influxQuery = "SELECT * FROM observed"
-        val queryResult = database.query("SELECT * FROM observed")
+    //    val influxQuery = "SELECT * FROM observed"
+    val queryResult = database.query("SELECT * FROM observed")
 
-        queryResult map { result =>
-            println(result.series.head.points("time"))
-            createResponse(query, result)
-        }
+    queryResult map { result =>
+      println(result.series.head.points("time"))
+      createResponse(query, result)
     }
+  }
 
-    val routes = {
-        logRequestResult("rest-api") {
-            path("observed") {
-                (post & entity(as[MetaData])) { query ⇒
-                    val response = getObservedData(query)
-                    onSuccess(response) { result =>
-                        complete(result)
-                    }
-                }
-            }
+  val routes = {
+    logRequestResult("rest-api") {
+      path("observed") {
+        (post & entity(as[MetaData])) { query ⇒
+          val response = getObservedData(query)
+          onSuccess(response) { result =>
+            complete(result)
+          }
         }
+      }
     }
+  }
 }
 
 object API extends App with Service1 {
-    override implicit val system = ActorSystem()
-    override implicit val executor = system.dispatcher
-    override implicit val materializer = ActorMaterializer()
+  override implicit val system = ActorSystem()
+  override implicit val executor = system.dispatcher
+  override implicit val materializer = ActorMaterializer()
 
-    override val config = ConfigFactory.load()
-    override val logger = Logging(system, getClass)
+  override val config = ConfigFactory.load()
+  override val logger = Logging(system, getClass)
 
-    Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port1"))
+  Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port1"))
 }

@@ -14,49 +14,49 @@ import scala.concurrent.duration._
 import akka.pattern.pipe
 
 object ExtensionHandler {
-    case class ExtensionHandlerData(timeSeriesEnvelop: TimeSeriesEnvelop)
-    case class ExtensionHandlerResult(timeSeriesEnvelop: TimeSeriesEnvelop)
+  case class ExtensionHandlerData(timeSeriesEnvelop: TimeSeriesEnvelop)
+  case class ExtensionHandlerResult(timeSeriesEnvelop: TimeSeriesEnvelop)
 }
 
 class ExtensionHandler extends Actor with ActorLogging {
-    import ExtensionHandler._
+  import ExtensionHandler._
 
-    implicit val timeout: Timeout = Timeout(15 seconds)
+  implicit val timeout: Timeout = Timeout(15 seconds)
 
-    // implicit val ec: ExecutionContext = context.dispatcher
+  // implicit val ec: ExecutionContext = context.dispatcher
 
-    var extensionAdapterRef: ActorRef = _
-    context.actorSelection("/user/extensionAdapter") ! Identify(None)
-    var adapterRef:ActorRef = _
+  var extensionAdapterRef: ActorRef = _
+  context.actorSelection("/user/extensionAdapter") ! Identify(None)
+  var adapterRef:ActorRef = _
 
-    def receive: Receive = {
-        case ExtensionHandlerData(timeSeriesEnvelop) =>
-            log.info("Extension Handler Data: {}", timeSeriesEnvelop)
-            adapterRef = sender()
-            // Request for validation Rules
-            extensionAdapterRef ! GetValidationConfig(timeSeriesEnvelop)
+  def receive: Receive = {
+    case ExtensionHandlerData(timeSeriesEnvelop) =>
+      log.info("Extension Handler Data: {}", timeSeriesEnvelop)
+      adapterRef = sender()
+      // Request for validation Rules
+      extensionAdapterRef ! GetValidationConfig(timeSeriesEnvelop)
 
-        case ValidationConfigResult(validationConfig, timeSeriesEnvelop) =>
-            log.info("Got ValidationConfig {}", validationConfig)
-            val validationRef: ActorRef = context.actorOf(Props[Validation])
-            pipe((validationRef ? ValidationData(validationConfig.get, timeSeriesEnvelop))
-                .mapTo[ExtensionHandlerResult] map { validatedTimeseriesEnvelop =>
-                log.info("Got Validated Timeseries (ask): {}", validatedTimeseriesEnvelop)
-                validationRef ! PoisonPill
-                StoreValidatedTimeSeries(validatedTimeseriesEnvelop.timeSeriesEnvelop)
-            }) to adapterRef
-            // NOTE: Handle without using ASK
-            // validationRef ! ValidationData(validationConfig.get, timeSeriesEnvelop)
+    case ValidationConfigResult(validationConfig, timeSeriesEnvelop) =>
+      log.info("Got ValidationConfig {}", validationConfig)
+      val validationRef: ActorRef = context.actorOf(Props[Validation])
+      pipe((validationRef ? ValidationData(validationConfig.get, timeSeriesEnvelop))
+        .mapTo[ExtensionHandlerResult] map { validatedTimeseriesEnvelop =>
+        log.info("Got Validated Timeseries (ask): {}", validatedTimeseriesEnvelop)
+        validationRef ! PoisonPill
+        StoreValidatedTimeSeries(validatedTimeseriesEnvelop.timeSeriesEnvelop)
+      }) to adapterRef
+    // NOTE: Handle without using ASK
+    // validationRef ! ValidationData(validationConfig.get, timeSeriesEnvelop)
 
-        case ExtensionHandlerResult(validatedTimeseriesEnvelop) =>
-            log.info("Got Validated Timeseries {}", validatedTimeseriesEnvelop)
-            sender() ! PoisonPill
-            adapterRef ! StoreValidatedTimeSeries(validatedTimeseriesEnvelop)
+    case ExtensionHandlerResult(validatedTimeseriesEnvelop) =>
+      log.info("Got Validated Timeseries {}", validatedTimeseriesEnvelop)
+      sender() ! PoisonPill
+      adapterRef ! StoreValidatedTimeSeries(validatedTimeseriesEnvelop)
 
-        case ActorIdentity(_, Some(ref)) =>
-            println("Set Extension Handler Ref::",ref, ref.path.name)
-            extensionAdapterRef = ref
-        case ActorIdentity(_, None) =>
-            context.stop(self)
-    }
+    case ActorIdentity(_, Some(ref)) =>
+      println("Set Extension Handler Ref::",ref, ref.path.name)
+      extensionAdapterRef = ref
+    case ActorIdentity(_, None) =>
+      context.stop(self)
+  }
 }

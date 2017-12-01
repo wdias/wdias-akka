@@ -23,18 +23,18 @@ import scala.concurrent._
 import ExecutionContext.Implicits.global
 
 object Validation {
-    case class ValidationData(validationConfig: ValidationConfig, timeSeriesEnvelop: TimeSeriesEnvelop)
+  case class ValidationData(validationConfig: ValidationConfig, timeSeriesEnvelop: TimeSeriesEnvelop)
 }
 
 class Validation extends Actor with ActorLogging{
-    import Validation._
+  import Validation._
 
-    implicit val timeout: Timeout = Timeout(15 seconds)
+  implicit val timeout: Timeout = Timeout(15 seconds)
 
-    def receive: Receive = {
-        case ValidationData(validationConfig,timeSeriesEnvelop) =>
-            log.info("Validating Data {}", validationConfig)
-            sender() ! ExtensionHandlerResult(timeSeriesEnvelop)
-    }
+  def receive: Receive = {
+    case ValidationData(validationConfig,timeSeriesEnvelop) =>
+      log.info("Validating Data {}", validationConfig)
+      sender() ! ExtensionHandlerResult(timeSeriesEnvelop)
+  }
 
 }
