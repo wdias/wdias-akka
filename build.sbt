@@ -12,6 +12,7 @@ lazy val influxDBClientVersion = "0.5.2"
 lazy val logBackVersion = "1.2.3"
 lazy val slickVersion = "3.2.1"
 lazy val mysqlConnectorVersion = "5.1.36"
+lazy val netcdfVersion = "4.6.9"
 
 libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
@@ -26,7 +27,10 @@ libraryDependencies ++= Seq(
     "ch.qos.logback" % "logback-classic" % logBackVersion,
     "com.typesafe.slick" %% "slick" % slickVersion,
     "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
-    "mysql" % "mysql-connector-java" % mysqlConnectorVersion
+    "mysql" % "mysql-connector-java" % mysqlConnectorVersion,
+    "edu.ucar" % "netcdfAll" % netcdfVersion
 )
+
+resolvers += "Unidata Releases" at "https://artifacts.unidata.ucar.edu/repository/unidata-releases"
 
 licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
