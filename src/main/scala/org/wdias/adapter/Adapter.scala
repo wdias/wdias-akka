@@ -8,9 +8,13 @@ import akka.pattern.pipe
 import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
 import org.wdias.extensions.ExtensionHandler.{ExtensionHandlerData, ExtensionHandlerResult}
+import ucar.ma2.DataType
+import ucar.nc2.{Attribute, Dimension}
 // Check to Run in Actor Context
 import com.paulgoldbaum.influxdbclient.{InfluxDB, Point, QueryResult, Record}
 import org.wdias.constant._
+import java.util
+import java.nio.file.{Paths, Files}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -56,6 +60,60 @@ class Adapter extends Actor with ActorLogging {
     TimeSeriesEnvelop(metaData, timeSeries, None)
   }
 
+  def createNetcdfFile(): Unit = {
+    val location = "/tmp/testWrite.nc"
+
+    if(Files.exists(Paths.get(location))) {
+      return null
+    }
+    println("File does not exists. Create new ", location)
+    import ucar.nc2.NetcdfFileWriter
+    val writer = NetcdfFileWriter.createNew(NetcdfFileWriter.Version.netcdf3, location, null)
+
+    // add dimensions
+    val latDim = writer.addDimension(null, "lat", 64)
+    val lonDim = writer.addDimension(null, "lon", 128)
+
+    // add Variable double temperature(lat,lon)
+    val dims = new util.ArrayList[Dimension]
+    dims.add(latDim)
+    dims.add(lonDim)
+
+    val t = writer.addVariable(null, "temperature", DataType.DOUBLE, dims)
+    t.addAttribute(new Attribute("units", "K")) // add a 1D attribute of length 3
+    import ucar.ma2.{Array => NetcdfArray}
+    val data = NetcdfArray.factory(classOf[Int], Array[Int](3), Array[Int](1, 2, 3))
+    t.addAttribute(new Attribute("scale", data))
+
+    // add a string-valued variable: char svar(80)
+    val svar_len: Dimension = writer.addDimension(null, "svar_len", 80)
+    writer.addVariable(null, "svar", DataType.CHAR, "svar_len")
+
+    // add a 2D string-valued variable: char names(names, 80)
+    val names: Dimension = writer.addDimension(null, "names", 3)
+    writer.addVariable(null, "names", DataType.CHAR, "names svar_len")
+
+    // add a scalar variable
+    writer.addVariable(null, "scalar", DataType.DOUBLE, new util.ArrayList[Dimension])
+
+    // add global attributes
+    writer.addGroupAttribute(null, new Attribute("yo", "face"))
+    writer.addGroupAttribute(null, new Attribute("versionD", 1.2))
+    writer.addGroupAttribute(null, new Attribute("versionF", 1.2.toFloat))
+    writer.addGroupAttribute(null, new Attribute("versionI", 1))
+    writer.addGroupAttribute(null, new Attribute("versionS", 2.toShort))
+    writer.addGroupAttribute(null, new Attribute("versionB", 3.toByte))
+
+    // create the file
+    try {
+      writer.create()
+    } catch {
+      case e: Exception => System.err.printf("ERROR creating file %s%n%s", location, e.getMessage);
+    }
+    writer.close()
+    null
+  }
+
   def receive: Receive = {
     case StoreTimeSeries(data) =>
       log.info("StoringTimeSeries... {}", sender())
@@ -90,9 +148,9 @@ class Adapter extends Actor with ActorLogging {
         }
       }) to sender()
 
-    case StoreValidatedTimeSeries(data) =>
-      log.info("StoreValidatedTimeSeries... {}, {}", sender(), data)
-
+    case StoreValidatedTimeSeries(timeSeriesEnvelop) =>
+      log.info("StoreValidatedTimeSeries... {}, {}", sender(), timeSeriesEnvelop)
+      createNetcdfFile()
 
     case GetTimeSeries(query) =>
       val influxdb = InfluxDB.connect("localhost", 8086)

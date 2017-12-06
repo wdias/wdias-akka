@@ -12,7 +12,7 @@ lazy val influxDBClientVersion = "0.5.2"
 lazy val logBackVersion = "1.2.3"
 lazy val slickVersion = "3.2.1"
 lazy val mysqlConnectorVersion = "5.1.36"
-lazy val netcdfVersion = "4.6.9"
+lazy val netcdfVersion = "4.6.11"
 
 libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
