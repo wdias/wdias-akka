@@ -1,25 +1,24 @@
 package org.wdias.adapter.models
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-import slick.dbio.DBIOAction
 import slick.jdbc.MySQLProfile.api._
-
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
-import akka.event.Logging
 import slick.jdbc.meta.MTable
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 case class Location(id: String, name: String)
 
 class Locations(tag: Tag) extends Table[Location](tag, "LOCATIONS") {
   def id = column[String]("LOCATION_ID", O.PrimaryKey) // This is the primary key column
   def name = column[String]("LOCATION_NAME")
+  def lat = column[Float]("LATITUDE")
+  def lon = column[Float]("LONGITUDE")
+  def elevation = column[Float]("LONGITUDE")
+  def description = column[String]("DESCRIPTION")
   // Every table needs a * projection with the same type as the table's type parameter
   def * = (id, name) <> (Location.tupled, Location.unapply)
 }
-
-//val locations = TableQuery[Locations]
 
 object LocationsDAO extends TableQuery(new Locations(_)) with DBComponent {
 
