@@ -1,5 +1,8 @@
 package org.wdias.adapter.models
 
+import org.wdias.adapter.models
+import slick.ast.BaseTypedType
+import slick.jdbc.JdbcType
 import slick.jdbc.MySQLProfile.api._
 import slick.jdbc.meta.MTable
 
@@ -7,44 +10,31 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-// An algebraic data type for booleans
-//sealed trait ParameterType
-//case object Instantaneous extends ParameterType
-//case object Accumulative extends ParameterType
-//
-//object ParameterTypeMapper {
-//  val string_enum_mapping:Map[String, ParameterType] = Map(
-//    "Instantaneous" -> Instantaneous,
-//    "Accumulative" -> Accumulative
-//  )
-//  val enum_string_mapping:Map[ParameterType, String] = string_enum_mapping.map(_.swap)
-//  implicit val parameterTypeStringMapper = MappedTypeMapper.base[ParameterType,String](
-//    e => enum_string_mapping(e),
-//    s => string_enum_mapping(s)
-//  )
-//}
 
-object MyEnum extends Enumeration {
-  type MyEnum = Value
-  val A = Value("a")
-  val B = Value("b")
-  val C = Value("c")
+object ParameterType extends Enumeration {
+  type ParameterType = Value
+  val Instantaneous: ParameterType.Value = Value("Instantaneous")
+  val Accumulative: ParameterType.Value = Value("Accumulative")
+  val Mean: ParameterType.Value = Value("Mean")
 
-  implicit val myEnumMapper = MappedColumnType.base[MyEnum, String](
+  implicit val parameterTypeMapper: JdbcType[ParameterType] with BaseTypedType[ParameterType] = MappedColumnType.base[ParameterType, String](
     e => e.toString,
-    s => MyEnum.withName(s)
+    s => ParameterType.withName(s)
   )
 }
 
-import MyEnum._
+import ParameterType._
 
-case class Parameter(parameterId: String, variable:String, unit:String, parameterType:MyEnum)
+case class Parameter(parameterId: String, variable: String, unit: String, parameterType: ParameterType)
 
 class Parameters(tag: Tag) extends Table[Parameter](tag, "PARAMETERS") {
   def parameterId = column[String]("PARAMETER_ID", O.PrimaryKey)
+
   def variable = column[String]("VARIABLE")
+
   def unit = column[String]("UNIT")
-  def parameterType = column[MyEnum]("PARAMETER_TYPE")
+
+  def parameterType = column[ParameterType]("PARAMETER_TYPE")
 
   override def * = (parameterId, variable, unit, parameterType) <> (Parameter.tupled, Parameter.unapply)
 }
@@ -59,9 +49,9 @@ object ParametersDAO extends TableQuery(new Parameters(_)) with DBComponent {
     val tables = List(ParametersDAO)
 
     val existing = db.run(MTable.getTables)
-    val f = existing.flatMap( v => {
+    val f = existing.flatMap(v => {
       val names = v.map(mt => mt.name.name)
-      val createIfNotExist = tables.filter( table =>
+      val createIfNotExist = tables.filter(table =>
         !names.contains(table.baseTableRow.tableName)).map(_.schema.create)
       db.run(DBIO.sequence(createIfNotExist))
     })
