@@ -7,17 +7,17 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-case class Location(id: String, name: String)
+case class Location(id: String, name: String, lat: Float, lon: Float, elevation: Option[Float] = Option(0), description: Option[String] = Option(""))
 
 class Locations(tag: Tag) extends Table[Location](tag, "LOCATIONS") {
   def id = column[String]("LOCATION_ID", O.PrimaryKey) // This is the primary key column
   def name = column[String]("LOCATION_NAME")
   def lat = column[Float]("LATITUDE")
   def lon = column[Float]("LONGITUDE")
-  def elevation = column[Float]("LONGITUDE")
-  def description = column[String]("DESCRIPTION")
+  def elevation = column[Option[Float]]("ELEVATION")
+  def description = column[Option[String]]("DESCRIPTION")
   // Every table needs a * projection with the same type as the table's type parameter
-  def * = (id, name) <> (Location.tupled, Location.unapply)
+  def * = (id, name, lat, lon, elevation, description) <> (Location.tupled, Location.unapply)
 }
 
 object LocationsDAO extends TableQuery(new Locations(_)) with DBComponent {

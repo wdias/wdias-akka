@@ -30,9 +30,11 @@ class ExtensionAdapter extends Actor with ActorLogging {
   def receive: Receive = {
     case GetValidationConfig(timeseriesEnvelop) =>
       log.info("GetValidationConfig:: {}, {}", timeseriesEnvelop, validationConfigs.find(_.name == timeseriesEnvelop.metaData.station.name))
+
       val stationName = timeseriesEnvelop.metaData.station.name
-      LocationsDAO.create(Location(stationName, stationName))
+      LocationsDAO.create(Location(stationName, stationName, 0, 0))
       ParametersDAO.create(Parameter("1234", "Discharge", "mm", ParameterType.Accumulative))
+
       sender() ! ValidationConfigResult(validationConfigs.find(_.name == timeseriesEnvelop.metaData.station.name), timeseriesEnvelop)
       log.info("<<<<")
     case GetTransformationConfig(timeseriesEnvelop) =>
