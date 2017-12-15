@@ -6,8 +6,7 @@ import slick.jdbc.meta.MTable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-
-case class Location(locationId: String, name: String, lat: Float, lon: Float, elevation: Option[Float] = Option(0), description: Option[String] = Option(""))
+import org.wdias.constant.Location
 
 class Locations(tag: Tag) extends Table[Location](tag, "LOCATIONS") {
   def locationId = column[String]("LOCATION_ID", O.PrimaryKey) // This is the primary key column

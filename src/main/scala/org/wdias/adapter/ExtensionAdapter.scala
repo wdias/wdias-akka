@@ -2,6 +2,7 @@ package org.wdias.adapter
 
 import akka.actor.{Actor, ActorLogging}
 import org.wdias.adapter.models._
+import org.wdias.constant._
 import org.wdias.constant.TimeSeriesEnvelop
 
 object ExtensionAdapter {
@@ -28,16 +29,18 @@ class ExtensionAdapter extends Actor with ActorLogging {
   )
 
   def receive: Receive = {
-    case GetValidationConfig(timeseriesEnvelop) =>
-      log.info("GetValidationConfig:: {}, {}", timeseriesEnvelop, validationConfigs.find(_.name == timeseriesEnvelop.metaData.station.name))
+    case GetValidationConfig(timeSeriesEnvelop) =>
+      log.info("GetValidationConfig:: {}, {}", timeSeriesEnvelop, validationConfigs.find(_.name == timeSeriesEnvelop.metaData.station.name))
 
-      val stationName = timeseriesEnvelop.metaData.station.name
+      val stationName = timeSeriesEnvelop.metaData.station.name
       LocationsDAO.create(Location(stationName, stationName, 0, 0))
-      ParametersDAO.create(Parameter("1234", "Discharge", "mm", ParameterType.Accumulative))
+      val p: Parameter = timeSeriesEnvelop.metaData.parameter
+
+      ParametersDAO.create(ParameterObj("1234", "Discharge", "mm", ParameterType.Accumulative))
       TimeStepsDAO.create(TimeStep("every_5_min", TimeStepUnit.Minute, 5, 0))
       TimeSeriesMetadataDAO.create(TimeSeriesMetadata("asdf", "WeatherStation", ValueType.Scalar, "1234", stationName, TimeSeriesType.ExternalHistorical, "every_5_min"))
 
-      sender() ! ValidationConfigResult(validationConfigs.find(_.name == timeseriesEnvelop.metaData.station.name), timeseriesEnvelop)
+      sender() ! ValidationConfigResult(validationConfigs.find(_.name == timeSeriesEnvelop.metaData.station.name), timeSeriesEnvelop)
       log.info("<<<<")
     case GetTransformationConfig(timeseriesEnvelop) =>
       log.info("GetTransformationConfig: {}", timeseriesEnvelop)

@@ -1,5 +1,6 @@
 package org.wdias.adapter.models
 
+import org.wdias.constant.ParameterType.ParameterType
 import slick.ast.BaseTypedType
 import slick.jdbc.JdbcType
 import slick.jdbc.MySQLProfile.api._
@@ -8,24 +9,15 @@ import slick.jdbc.meta.MTable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import org.wdias.constant._
 
-object ParameterType extends Enumeration {
-  type ParameterType = Value
-  val Instantaneous: ParameterType.Value = Value("Instantaneous")
-  val Accumulative: ParameterType.Value = Value("Accumulative")
-  val Mean: ParameterType.Value = Value("Mean")
 
+class Parameters(tag: Tag) extends Table[ParameterObj](tag, "PARAMETERS") {
   implicit val parameterTypeMapper: JdbcType[ParameterType] with BaseTypedType[ParameterType] = MappedColumnType.base[ParameterType, String](
     e => e.toString,
     s => ParameterType.withName(s)
   )
-}
 
-import ParameterType._
-
-case class Parameter(parameterId: String, variable: String, unit: String, parameterType: ParameterType)
-
-class Parameters(tag: Tag) extends Table[Parameter](tag, "PARAMETERS") {
   def parameterId = column[String]("PARAMETER_ID", O.PrimaryKey)
 
   def variable = column[String]("VARIABLE")
@@ -34,16 +26,16 @@ class Parameters(tag: Tag) extends Table[Parameter](tag, "PARAMETERS") {
 
   def parameterType = column[ParameterType]("PARAMETER_TYPE")
 
-  override def * = (parameterId, variable, unit, parameterType) <> (Parameter.tupled, Parameter.unapply)
+  override def * = (parameterId, variable, unit, parameterType) <> (ParameterObj.tupled, ParameterObj.unapply)
 }
 
 object ParametersDAO extends TableQuery(new Parameters(_)) with DBComponent {
 
-  def findById(parameterId: String): Future[Option[Parameter]] = {
+  def findById(parameterId: String): Future[Option[ParameterObj]] = {
     db.run(this.filter(_.parameterId === parameterId).result).map(_.headOption)
   }
 
-  def create(parameter: Parameter): Future[Int] = {
+  def create(parameter: ParameterObj): Future[Int] = {
     val tables = List(ParametersDAO)
 
     val existing = db.run(MTable.getTables)

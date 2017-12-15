@@ -9,7 +9,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, RequestEntity}
 import akka.stream.ActorMaterializer
-import org.wdias.constant.{DataPoint, MetaData, Station, TimeSeries, Unit}
+import org.wdias.constant._
 import org.wdias.input.Service
 import org.wdias.input.OnDemandInput.{bindingFuture, routes, system}
 import akka.http.scaladsl.model._
@@ -45,7 +45,8 @@ class InputJSONSysSpec() extends TestKit(ActorSystem("input-api"))
   "An Echo actor" must {
 
     "send back messages unchanged" in {
-      val metaData: MetaData = new MetaData(Station("Hanwella", 6.90, 80.08), "Observed", "HEC-HMS", Unit("m3/s", "Instantaneous"), "Precipitation", Array("Test1"))
+      val p = Parameter("1234", "Discharge", "mm", "Accumulative")
+      val metaData: MetaData = new MetaData(Station("Hanwella", 6.90, 80.08), p, "Observed", "HEC-HMS", Unit("m3/s", "Instantaneous"), "Precipitation", Array("Test1"))
       val timeseries: TimeSeries = new TimeSeries(List(
         new DataPoint("2017-09-15 00:00:00", 0.0),
         new DataPoint("2017-09-15 01:00:00", 0.1),

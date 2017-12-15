@@ -25,10 +25,10 @@ import org.wdias.adapter.models.ValueType._
 
 object TimeSeriesType extends Enumeration {
   type TimeSeriesType = Value
-  val ExternalHistorical: TimeSeriesType.Value = Value("ExternalHistorical")
-  val ExternalForecasting: TimeSeriesType.Value = Value("ExternalForecasting")
-  val SimulatedHistorical: TimeSeriesType.Value = Value("SimulatedHistorical")
-  val SimulatedForecasting: TimeSeriesType.Value = Value("SimulatedForecasting")
+  val ExternalHistorical: TimeSeriesType.Value = Value("External Historical")
+  val ExternalForecasting: TimeSeriesType.Value = Value("External Forecasting")
+  val SimulatedHistorical: TimeSeriesType.Value = Value("Simulated Historical")
+  val SimulatedForecasting: TimeSeriesType.Value = Value("Simulated Forecasting")
 
   implicit val timeSeriesTypeMapper: JdbcType[TimeSeriesType] with BaseTypedType[TimeSeriesType] = MappedColumnType.base[TimeSeriesType, String](
     e => e.toString,

@@ -31,14 +31,15 @@ class InputJSONSpec extends WordSpec
 
   "OnDemandInput" should {
     "return success for POST request with valid JSON data" in {
-      val metaData: MetaData = new MetaData(Station("Hanwella", 6.90, 80.08), "Observed", "HEC-HMS", Unit("m3/s", "Instantaneous"), "Precipitation", Array("Test1"))
-      val timeseries: TimeSeries = new TimeSeries(List(
+      val p = Parameter("1234", "Discharge", "mm", "Accumulative")
+      val metaData: MetaData = new MetaData(Station("Hanwella", 6.90, 80.08), p, "Observed", "HEC-HMS", Unit("m3/s", "Instantaneous"), "Precipitation", Array("Test1"))
+      val timeSeries: TimeSeries = new TimeSeries(List(
         new DataPoint("2017-09-15 00:00:00", 0.0),
         new DataPoint("2017-09-15 01:00:00", 0.1),
         new DataPoint("2017-09-15 02:00:00", 0.2),
         new DataPoint("2017-09-15 03:00:00", 0.3),
       ))
-      Post("/observed123", TimeSeriesEnvelop(metaData, Some(timeseries), None)) ~> routes ~> check {
+      Post("/observed123", TimeSeriesEnvelop(metaData, Some(timeSeries), None)) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         responseAs[String] shouldEqual "Success true"
       }
