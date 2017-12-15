@@ -34,11 +34,10 @@ class ExtensionAdapter extends Actor with ActorLogging {
 
       val stationName = timeSeriesEnvelop.metaData.station.name
       LocationsDAO.create(Location(stationName, stationName, 0, 0))
-      val p: Parameter = timeSeriesEnvelop.metaData.parameter
-
-      ParametersDAO.create(ParameterObj("1234", "Discharge", "mm", ParameterType.Accumulative))
+      val p: ParameterObj = timeSeriesEnvelop.metaData.parameter.toParameterObj
+      ParametersDAO.create(p)
       TimeStepsDAO.create(TimeStep("every_5_min", TimeStepUnit.Minute, 5, 0))
-      TimeSeriesMetadataDAO.create(TimeSeriesMetadata("asdf", "WeatherStation", ValueType.Scalar, "1234", stationName, TimeSeriesType.ExternalHistorical, "every_5_min"))
+      TimeSeriesMetadataDAO.create(TimeSeriesMetadata("asdf", "WeatherStation", ValueType.Scalar, p.parameterId, stationName, TimeSeriesType.ExternalHistorical, "every_5_min"))
 
       sender() ! ValidationConfigResult(validationConfigs.find(_.name == timeSeriesEnvelop.metaData.station.name), timeSeriesEnvelop)
       log.info("<<<<")

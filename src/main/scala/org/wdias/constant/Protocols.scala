@@ -17,8 +17,12 @@ object ParameterType extends Enumeration {
 
 import ParameterType._
 
-case class Parameter(parameterId: String, variable: String, unit: String, parameterType: String)
-case class ParameterObj(parameterId: String, variable: String, unit: String, parameterType: ParameterType)
+case class Parameter(parameterId: String, variable: String, unit: String, parameterType: String) {
+  def toParameterObj: ParameterObj = ParameterObj(this.parameterId, this.variable, this.unit, ParameterType.withName(this.parameterType))
+}
+case class ParameterObj(parameterId: String, variable: String, unit: String, parameterType: ParameterType) {
+  def toParameter: Parameter = Parameter(this.parameterId, this.variable, this.unit, this.parameterType.toString)
+}
 
 /* TODO: Implement conversion between Objects
 object ParameterJsonProtocol extends DefaultJsonProtocol {
