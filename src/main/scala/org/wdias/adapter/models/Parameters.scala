@@ -1,6 +1,5 @@
 package org.wdias.adapter.models
 
-import org.wdias.adapter.models
 import slick.ast.BaseTypedType
 import slick.jdbc.JdbcType
 import slick.jdbc.MySQLProfile.api._
@@ -9,7 +8,6 @@ import slick.jdbc.meta.MTable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-
 
 object ParameterType extends Enumeration {
   type ParameterType = Value
