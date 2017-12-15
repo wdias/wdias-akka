@@ -7,23 +7,23 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-case class Location(id: String, name: String, lat: Float, lon: Float, elevation: Option[Float] = Option(0), description: Option[String] = Option(""))
+case class Location(locationId: String, name: String, lat: Float, lon: Float, elevation: Option[Float] = Option(0), description: Option[String] = Option(""))
 
 class Locations(tag: Tag) extends Table[Location](tag, "LOCATIONS") {
-  def id = column[String]("LOCATION_ID", O.PrimaryKey) // This is the primary key column
+  def locationId = column[String]("LOCATION_ID", O.PrimaryKey) // This is the primary key column
   def name = column[String]("LOCATION_NAME")
   def lat = column[Float]("LATITUDE")
   def lon = column[Float]("LONGITUDE")
   def elevation = column[Option[Float]]("ELEVATION")
   def description = column[Option[String]]("DESCRIPTION")
   // Every table needs a * projection with the same type as the table's type parameter
-  def * = (id, name, lat, lon, elevation, description) <> (Location.tupled, Location.unapply)
+  def * = (locationId, name, lat, lon, elevation, description) <> (Location.tupled, Location.unapply)
 }
 
 object LocationsDAO extends TableQuery(new Locations(_)) with DBComponent {
 
-  def findById(id: String): Future[Option[Location]] = {
-    db.run(this.filter(_.id === id).result).map(_.headOption)
+  def findById(locationId: String): Future[Option[Location]] = {
+    db.run(this.filter(_.locationId === locationId).result).map(_.headOption)
   }
 
   def create(location: Location): Future[Int] = {
@@ -42,7 +42,7 @@ object LocationsDAO extends TableQuery(new Locations(_)) with DBComponent {
     db.run(this += location)
   }
 
-  def deleteById(id: String): Future[Int] = {
-    db.run(this.filter(_.id === id).delete)
+  def deleteById(locationId: String): Future[Int] = {
+    db.run(this.filter(_.locationId === locationId).delete)
   }
 }
