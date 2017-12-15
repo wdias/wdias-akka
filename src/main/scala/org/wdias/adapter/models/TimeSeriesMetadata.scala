@@ -3,7 +3,11 @@ package org.wdias.adapter.models
 import slick.ast.BaseTypedType
 import slick.jdbc.JdbcType
 import slick.jdbc.MySQLProfile.api._
-import slick.lifted.ForeignKeyQuery
+import slick.jdbc.meta.MTable
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 object ValueType extends Enumeration {
   type ValueType = Value
@@ -45,14 +49,38 @@ class TimeSeriesMetadataTable(tag: Tag) extends Table[TimeSeriesMetadata](tag, "
   def timeSeriesType = column[TimeSeriesType]("TIME_SERIES_TYPE", O.Unique) //
   def timeStepId = column[String]("TIME_STEP_ID", O.Unique) // Foreign Constrain
 
-  def parameters: (Parameters => Rep[String], ForeignKeyAction, ForeignKeyAction) =>
-    ForeignKeyQuery[Parameters, Parameter] = foreignKey("PARAMETER_ID_FK", parameterId, ParametersDAO)
-
-  def locations: (Locations => Rep[String], ForeignKeyAction, ForeignKeyAction) =>
-    ForeignKeyQuery[Locations, Location] = foreignKey("LOCATION_ID_FK", locationId, LocationsDAO)
-
-  def timeSteps: (TimeSteps => Rep[String], ForeignKeyAction, ForeignKeyAction) =>
-    ForeignKeyQuery[TimeSteps, TimeStep] = foreignKey("TIME_STEP_ID_FK", timeStepId, TimeStepsDAO)
-
   override def * = (timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId) <> (TimeSeriesMetadata.tupled, TimeSeriesMetadata.unapply)
+
+//  def parameters = foreignKey("PARAMETER_ID_FK", parameterId, ParametersDAO)
+//
+//  def locations = foreignKey("LOCATION_ID_FK", locationId, LocationsDAO)
+//
+//  def timeSteps = foreignKey("TIME_STEP_ID_FK", timeStepId, TimeStepsDAO)
+}
+
+object TimeSeriesMetadataDAO extends TableQuery(new TimeSeriesMetadataTable(_)) with DBComponent {
+
+  def findById(timeSeriesId: String): Future[Option[TimeSeriesMetadata]] = {
+    db.run(this.filter(_.timeSeriesId === timeSeriesId).result).map(_.headOption)
+  }
+
+  def create(timeSeriesMetadata: TimeSeriesMetadata): Future[Int] = {
+    val tables = List(TimeSeriesMetadataDAO)
+
+    val existing = db.run(MTable.getTables)
+    val f = existing.flatMap(v => {
+      val names = v.map(mt => mt.name.name)
+      val createIfNotExist = tables.filter(table =>
+        !names.contains(table.baseTableRow.tableName)).map(_.schema.create)
+      db.run(DBIO.sequence(createIfNotExist))
+    })
+    Await.result(f, Duration.Inf)
+
+    // db.run(this returning this.map(_.id) into ((acc, id) => acc.copy(id = id)) += location)
+    db.run(this += timeSeriesMetadata)
+  }
+
+  def deleteById(timeSeriesId: String): Future[Int] = {
+    db.run(this.filter(_.timeSeriesId === timeSeriesId).delete)
+  }
 }
