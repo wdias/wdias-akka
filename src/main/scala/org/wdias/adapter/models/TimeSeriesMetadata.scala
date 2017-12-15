@@ -42,20 +42,20 @@ case class TimeSeriesMetadata(timeSeriesId: String, moduleId: String, valueType:
 
 class TimeSeriesMetadataTable(tag: Tag) extends Table[TimeSeriesMetadata](tag, "TIME_SERIES_METADATA") {
   def timeSeriesId = column[String]("TIME_SERIES_ID", O.PrimaryKey) //
-  def moduleId = column[String]("MODULE_ID", O.Unique) //
-  def valueType = column[ValueType]("VALUE_TYPE", O.Unique) //
-  def parameterId = column[String]("PARAMETER_ID", O.Unique) // Foreign Constrain
-  def locationId = column[String]("LOCATION_ID", O.Unique) // Foreign Constrain
-  def timeSeriesType = column[TimeSeriesType]("TIME_SERIES_TYPE", O.Unique) //
-  def timeStepId = column[String]("TIME_STEP_ID", O.Unique) // Foreign Constrain
+  def moduleId = column[String]("MODULE_ID", O.Unique, O.Length(255)) //
+  def valueType = column[ValueType]("VALUE_TYPE") //
+  def parameterId = column[String]("PARAMETER_ID", O.Length(255)) // Foreign Constrain
+  def locationId = column[String]("LOCATION_ID", O.Length(255)) // Foreign Constrain
+  def timeSeriesType = column[TimeSeriesType]("TIME_SERIES_TYPE") //
+  def timeStepId = column[String]("TIME_STEP_ID", O.Length(255)) // Foreign Constrain
 
   override def * = (timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId) <> (TimeSeriesMetadata.tupled, TimeSeriesMetadata.unapply)
 
-//  def parameters = foreignKey("PARAMETER_ID_FK", parameterId, ParametersDAO)
-//
-//  def locations = foreignKey("LOCATION_ID_FK", locationId, LocationsDAO)
-//
-//  def timeSteps = foreignKey("TIME_STEP_ID_FK", timeStepId, TimeStepsDAO)
+  def parameters = foreignKey("PARAMETER_ID_FK", parameterId, ParametersDAO)(_.parameterId, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
+
+  def locations = foreignKey("LOCATION_ID_FK", locationId, LocationsDAO)(_.locationId, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
+
+  def timeSteps = foreignKey("TIME_STEP_ID_FK", timeStepId, TimeStepsDAO)(_.timeStepId, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
 }
 
 object TimeSeriesMetadataDAO extends TableQuery(new TimeSeriesMetadataTable(_)) with DBComponent {
