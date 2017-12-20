@@ -49,11 +49,11 @@ case class MetaData(station: Station, parameter: Parameter, `type`: String, sour
 case class DataPoint(time: String, value: Double)
 
 case class TimeSeries(timeSeries: List[DataPoint] = List()) {
-  def addDataPoint(time: String, value: Double) = copy(timeSeries = timeSeries :+ DataPoint(time, value))
+  def addDataPoint(time: String, value: Double): TimeSeries = copy(timeSeries = timeSeries :+ DataPoint(time, value))
 
-  def addDataPoint(dataPoint: DataPoint) = copy(timeSeries = timeSeries :+ dataPoint)
+  def addDataPoint(dataPoint: DataPoint): TimeSeries = copy(timeSeries = timeSeries :+ dataPoint)
 
-  def addDataPoints(dataPoints: Array[DataPoint]) = copy(timeSeries = timeSeries ++ dataPoints)
+  def addDataPoints(dataPoints: Array[DataPoint]): TimeSeries = copy(timeSeries = timeSeries ++ dataPoints)
 }
 
 case class DataLocation(dateType: String, fileType: String, location: String)
@@ -61,13 +61,13 @@ case class DataLocation(dateType: String, fileType: String, location: String)
 case class TimeSeriesEnvelop(metaData: MetaData, timeSeries: Option[TimeSeries], dataLocation: Option[DataLocation])
 
 trait Protocols extends SprayJsonSupport with DefaultJsonProtocol {
-  implicit val stationFormat = jsonFormat3(Station.apply)
-  implicit val locationFormat = jsonFormat6(Location.apply)
-  implicit val parameterFormat = jsonFormat4(Parameter.apply)
-  implicit val unitFormat = jsonFormat2(Unit.apply)
-  implicit val metaDataFormat = jsonFormat7(MetaData.apply)
-  implicit val pointFormat = jsonFormat2(DataPoint.apply)
-  implicit val timeSeriesFormat = jsonFormat1(TimeSeries.apply)
-  implicit val dataLocationFormat = jsonFormat3(DataLocation.apply)
-  implicit val timeSeriesEnvelopFormat = jsonFormat3(TimeSeriesEnvelop.apply)
+  implicit val stationFormat: RootJsonFormat[Station] = jsonFormat3(Station.apply)
+  implicit val locationFormat: RootJsonFormat[Location] = jsonFormat6(Location.apply)
+  implicit val parameterFormat: RootJsonFormat[Parameter] = jsonFormat4(Parameter.apply)
+  implicit val unitFormat: RootJsonFormat[Unit] = jsonFormat2(Unit.apply)
+  implicit val metaDataFormat: RootJsonFormat[MetaData] = jsonFormat7(MetaData.apply)
+  implicit val pointFormat: RootJsonFormat[DataPoint] = jsonFormat2(DataPoint.apply)
+  implicit val timeSeriesFormat: RootJsonFormat[TimeSeries] = jsonFormat1(TimeSeries.apply)
+  implicit val dataLocationFormat: RootJsonFormat[DataLocation] = jsonFormat3(DataLocation.apply)
+  implicit val timeSeriesEnvelopFormat: RootJsonFormat[TimeSeriesEnvelop] = jsonFormat3(TimeSeriesEnvelop.apply)
 }

@@ -41,9 +41,9 @@ class ExtensionAdapter extends Actor with ActorLogging {
 
       sender() ! ValidationConfigResult(validationConfigs.find(_.name == timeSeriesEnvelop.metaData.station.name), timeSeriesEnvelop)
       log.info("<<<<")
-    case GetTransformationConfig(timeseriesEnvelop) =>
-      log.info("GetTransformationConfig: {}", timeseriesEnvelop)
-    case GetInterpolationConfig(timeseriesEnvelop) =>
-      log.info("GetInterpolationConfig: {}", timeseriesEnvelop)
+    case GetTransformationConfig(timeSeriesEnvelop) =>
+      log.info("GetTransformationConfig: {}", timeSeriesEnvelop)
+    case GetInterpolationConfig(timeSeriesEnvelop) =>
+      log.info("GetInterpolationConfig: {}", timeSeriesEnvelop)
   }
 }
