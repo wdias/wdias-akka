@@ -73,11 +73,12 @@ trait Service extends Protocols {
     data.timeSeries.get.timeSeries.foreach { tt: DataPoint =>
       val dateTime: LocalDateTime = LocalDateTime.parse(tt.time, formatter)
       val p = Point("observed", dateTime.atZone(zoneId).toEpochSecond())
-        .addTag("station", metaData.station.name)
-        .addTag("type", metaData.`type`)
-        .addTag("source", metaData.source)
-        .addTag("unit", metaData.unit.unit)
-        .addField("value", tt.value)
+        .addTag("moduleId", metaData.moduleId)
+        .addTag("valueType", metaData.valueType)
+        .addTag("parameterId", metaData.parameter.parameterId)
+        .addTag("locationId", metaData.location.locationId)
+        .addTag("timeSeriesType", metaData.timeSeriesType)
+        .addTag("timeStepId", metaData.timeStep.timeStepId)
 
       points = points :+ p
     }
@@ -141,11 +142,12 @@ trait Service extends Protocols {
             val tt: DataPoint = DataPoint(lineSplit(0), lineSplit(1).toDouble)
             val dateTime: LocalDateTime = LocalDateTime.parse(tt.time, formatter)
             val p = Point("observed", dateTime.atZone(zoneId).toEpochSecond())
-              .addTag("station", metaData.station.name)
-              .addTag("type", metaData.`type`)
-              .addTag("source", metaData.source)
-              .addTag("unit", metaData.unit.unit)
-              .addField("value", tt.value)
+              .addTag("moduleId", metaData.moduleId)
+              .addTag("valueType", metaData.valueType)
+              .addTag("parameterId", metaData.parameter.parameterId)
+              .addTag("locationId", metaData.location.locationId)
+              .addTag("timeSeriesType", metaData.timeSeriesType)
+              .addTag("timeStepId", metaData.timeStep.timeStepId)
 
             points = points :+ p
           }

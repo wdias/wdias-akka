@@ -45,13 +45,15 @@ class InputJSONSysSpec() extends TestKit(ActorSystem("input-api"))
   "An Echo actor" must {
 
     "send back messages unchanged" in {
-      val p = Parameter("1234", "Discharge", "mm", "Accumulative")
-      val metaData: MetaData = new MetaData(Station("Hanwella", 6.90, 80.08), p, "Observed", "HEC-HMS", Unit("m3/s", "Instantaneous"), "Precipitation", Array("Test1"))
+      val p = Parameter("1234", "Precipitation", "mm", "Accumulative")
+      val l = Location("wdias_hanwella", "Hanwella", 6.90f, 80.08f)
+      val t = TimeStep("every_5_min", "Minutes", Option(5))
+      val metaData: MetaData = new MetaData("ModuleTest", "Scalar", p, l, "ExternalHistorical", t, Array("Test1"))
       val timeseries: TimeSeries = new TimeSeries(List(
         new DataPoint("2017-09-15 00:00:00", 0.0),
         new DataPoint("2017-09-15 01:00:00", 0.1),
         new DataPoint("2017-09-15 02:00:00", 0.2),
-        new DataPoint("2017-09-15 03:00:00", 0.3),
+        new DataPoint("2017-09-15 03:00:00", 0.3)
       ))
 
       Marshal(timeseries).to[RequestEntity] map { entity =>

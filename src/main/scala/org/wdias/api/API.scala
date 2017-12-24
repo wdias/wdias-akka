@@ -60,7 +60,7 @@ trait Service1 extends Protocols {
 
   def getObservedData(query: MetaData): Future[TimeSeriesEnvelop] = {
     val influxdb = InfluxDB.connect("localhost", 8086)
-    logger.info(query.source)
+    logger.info(query.moduleId)
     val database = influxdb.selectDatabase("curw")
 
     //    val influxQuery = "SELECT * FROM observed"

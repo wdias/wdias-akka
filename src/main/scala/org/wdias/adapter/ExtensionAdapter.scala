@@ -30,16 +30,16 @@ class ExtensionAdapter extends Actor with ActorLogging {
 
   def receive: Receive = {
     case GetValidationConfig(timeSeriesEnvelop) =>
-      log.info("GetValidationConfig:: {}, {}", timeSeriesEnvelop, validationConfigs.find(_.name == timeSeriesEnvelop.metaData.station.name))
+      log.info("GetValidationConfig:: {}, {}", timeSeriesEnvelop, validationConfigs.find(_.name == timeSeriesEnvelop.metaData.location.name))
 
-      val stationName = timeSeriesEnvelop.metaData.station.name
+      val stationName = timeSeriesEnvelop.metaData.location.name
       LocationsDAO.create(Location(stationName, stationName, 0, 0))
       val p: ParameterObj = timeSeriesEnvelop.metaData.parameter.toParameterObj
       ParametersDAO.create(p)
-      TimeStepsDAO.create(TimeStep("every_5_min", TimeStepUnit.Minute, 5, 0))
-      TimeSeriesMetadataDAO.create(TimeSeriesMetadata("asdf", "WeatherStation", ValueType.Scalar, p.parameterId, stationName, TimeSeriesType.ExternalHistorical, "every_5_min"))
+      TimeStepsDAO.create(TimeStepObj("every_5_min", TimeStepUnit.Minute, Option(5)))
+      TimeSeriesMetadataDAO.create(MetadataIds("asdf", "WeatherStation", ValueType.Scalar, p.parameterId, stationName, TimeSeriesType.ExternalHistorical, "every_5_min"))
 
-      sender() ! ValidationConfigResult(validationConfigs.find(_.name == timeSeriesEnvelop.metaData.station.name), timeSeriesEnvelop)
+      sender() ! ValidationConfigResult(validationConfigs.find(_.name == timeSeriesEnvelop.metaData.location.name), timeSeriesEnvelop)
       log.info("<<<<")
     case GetTransformationConfig(timeSeriesEnvelop) =>
       log.info("GetTransformationConfig: {}", timeSeriesEnvelop)

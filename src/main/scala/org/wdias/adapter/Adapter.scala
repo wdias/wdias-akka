@@ -126,15 +126,19 @@ class Adapter extends Actor with ActorLogging {
       data.timeSeries.get.timeSeries.foreach { tt: DataPoint =>
         val dateTime: LocalDateTime = LocalDateTime.parse(tt.time, formatter)
         val p = Point("observed", dateTime.atZone(zoneId).toEpochSecond())
-          .addTag("station", metaData.station.name)
-          .addTag("type", metaData.`type`)
-          .addTag("source", metaData.source)
-          .addTag("unit", metaData.unit.unit)
-          .addTag("variable", metaData.variable)
+          // Tags
+          .addTag("moduleId", metaData.moduleId)
+          .addTag("valueType", metaData.valueType)
+          .addTag("parameterId", metaData.parameter.parameterId)
+          .addTag("locationId", metaData.location.locationId)
+          .addTag("timeSeriesType", metaData.timeSeriesType)
+          .addTag("timeStepId", metaData.timeStep.timeStepId)
+          // Values
           .addField("value", tt.value)
 
         points = points :+ p
       }
+      log.info("Created points {}", points)
 
       pipe(database.bulkWrite(points, precision = Precision.SECONDS).mapTo[Boolean] map { isWritten =>
         println("Written to the DB: " + isWritten)

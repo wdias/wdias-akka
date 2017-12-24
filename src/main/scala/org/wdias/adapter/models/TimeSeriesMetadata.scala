@@ -1,5 +1,7 @@
 package org.wdias.adapter.models
 
+import org.wdias.constant.ValueType.ValueType
+import org.wdias.constant.TimeSeriesType.TimeSeriesType
 import slick.ast.BaseTypedType
 import slick.jdbc.JdbcType
 import slick.jdbc.MySQLProfile.api._
@@ -8,39 +10,20 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import org.wdias.constant.{ValueType, TimeSeriesType}
+import org.wdias.constant._
 
-object ValueType extends Enumeration {
-  type ValueType = Value
-  val Scalar: ValueType.Value = Value("Scalar")
-  val Vector: ValueType.Value = Value("Vector")
-  val Grid: ValueType.Value = Value("Grid")
 
+class TimeSeriesMetadataTable(tag: Tag) extends Table[MetadataIds](tag, "TIME_SERIES_METADATA") {
   implicit val valueTypeMapper: JdbcType[ValueType] with BaseTypedType[ValueType] = MappedColumnType.base[ValueType, String](
     e => e.toString,
     s => ValueType.withName(s)
   )
-}
-
-import org.wdias.adapter.models.ValueType._
-
-object TimeSeriesType extends Enumeration {
-  type TimeSeriesType = Value
-  val ExternalHistorical: TimeSeriesType.Value = Value("External Historical")
-  val ExternalForecasting: TimeSeriesType.Value = Value("External Forecasting")
-  val SimulatedHistorical: TimeSeriesType.Value = Value("Simulated Historical")
-  val SimulatedForecasting: TimeSeriesType.Value = Value("Simulated Forecasting")
-
   implicit val timeSeriesTypeMapper: JdbcType[TimeSeriesType] with BaseTypedType[TimeSeriesType] = MappedColumnType.base[TimeSeriesType, String](
     e => e.toString,
     s => TimeSeriesType.withName(s)
   )
-}
 
-import org.wdias.adapter.models.TimeSeriesType._
-
-case class TimeSeriesMetadata(timeSeriesId: String, moduleId: String, valueType: ValueType, parameterId: String, locationId: String, timeSeriesType: TimeSeriesType, timeStepId: String)
-
-class TimeSeriesMetadataTable(tag: Tag) extends Table[TimeSeriesMetadata](tag, "TIME_SERIES_METADATA") {
   def timeSeriesId = column[String]("TIME_SERIES_ID", O.PrimaryKey) //
   def moduleId = column[String]("MODULE_ID", O.Unique, O.Length(255)) //
   def valueType = column[ValueType]("VALUE_TYPE") //
@@ -49,7 +32,7 @@ class TimeSeriesMetadataTable(tag: Tag) extends Table[TimeSeriesMetadata](tag, "
   def timeSeriesType = column[TimeSeriesType]("TIME_SERIES_TYPE") //
   def timeStepId = column[String]("TIME_STEP_ID", O.Length(255)) // Foreign Constrain
 
-  override def * = (timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId) <> (TimeSeriesMetadata.tupled, TimeSeriesMetadata.unapply)
+  override def * = (timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId) <> (MetadataIds.tupled, MetadataIds.unapply)
 
   def parameters = foreignKey("PARAMETER_ID_FK", parameterId, ParametersDAO)(_.parameterId, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
 
@@ -60,11 +43,11 @@ class TimeSeriesMetadataTable(tag: Tag) extends Table[TimeSeriesMetadata](tag, "
 
 object TimeSeriesMetadataDAO extends TableQuery(new TimeSeriesMetadataTable(_)) with DBComponent {
 
-  def findById(timeSeriesId: String): Future[Option[TimeSeriesMetadata]] = {
+  def findById(timeSeriesId: String): Future[Option[MetadataIds]] = {
     db.run(this.filter(_.timeSeriesId === timeSeriesId).result).map(_.headOption)
   }
 
-  def create(timeSeriesMetadata: TimeSeriesMetadata): Future[Int] = {
+  def create(timeSeriesMetadata: MetadataIds): Future[Int] = {
     val tables = List(TimeSeriesMetadataDAO)
 
     val existing = db.run(MTable.getTables)
