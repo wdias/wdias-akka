@@ -24,11 +24,12 @@ class ExportJSON extends Actor with ActorLogging {
 
   def receive = {
     case ExportJSONData(metaData) =>
-      log.debug("Export CSV: {}", metaData)
+      log.info("Export JSON: {}", metaData)
+      log.info("Sender: {}, To: {}", sender(), adapterRef)
       adapterRef forward GetTimeSeries(metaData)
 
     case ActorIdentity(_, Some(ref)) =>
-      println("Set Adapter", ref)
+      log.info("Set Adapter (API): {}", ref)
       adapterRef = ref
     case ActorIdentity(_, None) =>
       context.stop(self)

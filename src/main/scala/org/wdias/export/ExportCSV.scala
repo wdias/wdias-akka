@@ -24,7 +24,7 @@ class ExportCSV extends Actor with ActorLogging {
       adapterRef forward GetTimeSeries(metaData)
 
     case ActorIdentity(_, Some(ref)) =>
-      println("Set Adapter", ref)
+      log.info("Set Adapter (API): {}", ref)
       adapterRef = ref
     case ActorIdentity(_, None) =>
       context.stop(self)

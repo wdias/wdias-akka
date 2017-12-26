@@ -30,7 +30,7 @@ class ImportJSON extends Actor with ActorLogging {
       adapterRef forward StoreTimeSeries(timeSeriesEnvelop)
 
     case ActorIdentity(_, Some(ref)) =>
-      println("Set Adapter", ref)
+      log.info("Set Adapter (Input): {}", ref)
       adapterRef = ref
     case ActorIdentity(_, None) =>
       context.stop(self)

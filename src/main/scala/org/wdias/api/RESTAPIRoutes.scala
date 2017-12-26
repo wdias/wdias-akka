@@ -32,13 +32,14 @@ trait RESTAPIRoutes extends Protocols {
   def exportCSVRef: ActorRef
 
   // Required by the `ask` (?) method below
-  implicit lazy val timeout: Timeout = Timeout(5.seconds) // TODO: Obtain from config
+  implicit lazy val timeout: Timeout = Timeout(15.seconds) // TODO: Obtain from config
 
   // --- All Input Routes ---
   lazy val restAPIRoutes: Route = {
     concat(
       pathPrefix("observed") {
         (post & entity(as[MetaData])) { metaData: MetaData =>
+          log.info("GET request: observed > {}", metaData)
           val response: Future[Result] = (exportJSONRef ? ExportJSONData(metaData)).mapTo[Result]
           onSuccess(response) { result =>
             complete(Created -> result.timeSeriesEnvelop)

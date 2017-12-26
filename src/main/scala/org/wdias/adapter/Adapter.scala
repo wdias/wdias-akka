@@ -7,14 +7,15 @@ import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.pattern.pipe
 import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
-import org.wdias.extensions.ExtensionHandler.{ExtensionHandlerData, ExtensionHandlerResult}
+import org.wdias.extensions.ExtensionHandler.ExtensionHandlerData
 import ucar.ma2.DataType
 import ucar.nc2.{Attribute, Dimension}
 // Check to Run in Actor Context
+import java.nio.file.{Files, Paths}
+import java.util
+
 import com.paulgoldbaum.influxdbclient.{InfluxDB, Point, QueryResult, Record}
 import org.wdias.constant._
-import java.util
-import java.nio.file.{Paths, Files}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -47,12 +48,13 @@ class Adapter extends Actor with ActorLogging {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
     var points: List[DataPoint] = List()
+    val valueIndex = result.series.head.columns.indexOf("value")
     val records: List[Record] = result.series.head.records
     records.foreach { record =>
-      println(record.allValues)
+      log.info(record.allValues.toString())
       val dateTimeStr: String = record.allValues(0).toString.split('Z')(0)
       val dateTime = LocalDateTime.parse(dateTimeStr)
-      val value: Double = record.allValues(5).toString.toDouble
+      val value: Double = record.allValues(valueIndex).toString.toDouble
       points = points :+ DataPoint(dateTime.format(formatter), value)
     }
     val timeSeries = Some(TimeSeries(points))
@@ -118,7 +120,7 @@ class Adapter extends Actor with ActorLogging {
     case StoreTimeSeries(data) =>
       log.info("StoringTimeSeries... {}", sender())
       val influxdb = InfluxDB.connect("localhost", 8086)
-      val database = influxdb.selectDatabase("curw")
+      val database = influxdb.selectDatabase("wdias")
       val metaData: MetaData = data.metaData
       var points: List[Point] = List()
       val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
@@ -158,7 +160,7 @@ class Adapter extends Actor with ActorLogging {
 
     case GetTimeSeries(query) =>
       val influxdb = InfluxDB.connect("localhost", 8086)
-      val database = influxdb.selectDatabase("curw")
+      val database = influxdb.selectDatabase("wdias")
 
       //    val influxQuery = "SELECT * FROM observed"
       val queryResult = database.query("SELECT * FROM observed")

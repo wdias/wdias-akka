@@ -35,9 +35,9 @@ object InputServer extends App with InputRoutes {
   // From InputRoutes trait
   lazy val routes: Route = inputRoutes
 
-  val serverBindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port"))
+  val serverBindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port-input"))
 
-  println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+  log.info(s"Server online at http://{}:{}/\nPress RETURN to stop...", config.getString("http.interface"), config.getInt("http.port-input"))
 
   StdIn.readLine()
 
