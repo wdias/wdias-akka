@@ -37,7 +37,7 @@ object InputServer extends App with InputRoutes {
 
   val serverBindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port-input"))
 
-  log.info(s"Server online at http://{}:{}/\nPress RETURN to stop...", config.getString("http.interface"), config.getInt("http.port-input"))
+  log.info("Server online at http://{}:{}/\nPress RETURN to stop...", config.getString("http.interface"), config.getInt("http.port-input"))
 
   StdIn.readLine()
 

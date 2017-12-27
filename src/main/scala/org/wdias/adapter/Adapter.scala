@@ -162,15 +162,22 @@ class Adapter extends Actor with ActorLogging {
       val influxdb = InfluxDB.connect("localhost", 8086)
       val database = influxdb.selectDatabase("wdias")
 
-      //    val influxQuery = "SELECT * FROM observed"
-      val queryResult = database.query("SELECT * FROM observed")
+      val influxQuery = s"SELECT * FROM observed WHERE " +
+        s"moduleId = '${query.moduleId}' " +
+        s"AND valueType = '${query.valueType}' " +
+        s"AND parameterId = '${query.parameter.parameterId}' " +
+        s"AND locationId = '${query.location.locationId}' " +
+        s"AND timeSeriesType = '${query.timeSeriesType}' " +
+        s"AND timeStepId = '${query.timeStep.timeStepId}'"
+      log.info("Influx Query: {}", influxQuery)
+      val queryResult = database.query(influxQuery)
 
       pipe(queryResult.mapTo[QueryResult] map { result =>
         Result(createResponse(query, result))
       }) to sender()
 
     case ActorIdentity(_, Some(ref)) =>
-      println("Set Extension Handler Ref", ref)
+      log.info("Set Extension Handler Ref: {}", ref)
       extensionHandlerRef = ref
     case ActorIdentity(_, None) =>
       context.stop(self)
