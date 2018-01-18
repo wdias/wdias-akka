@@ -3,6 +3,14 @@ name := "wdias"
 version := "0.1"
 scalaVersion := "2.12.4"
 
+// Enable the Lightbend Telemetry (Cinnamon) sbt plugin
+lazy val app = project in file(".") enablePlugins (Cinnamon)
+// Add the Cinnamon Agent for run and test
+cinnamon in run := true
+cinnamon in test := true
+// Set the Cinnamon Agent log level
+cinnamonLogLevel := "INFO"
+
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
 lazy val akkaVersion = "2.5.7"
@@ -28,7 +36,9 @@ libraryDependencies ++= Seq(
     "com.typesafe.slick" %% "slick" % slickVersion,
     "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
     "mysql" % "mysql-connector-java" % mysqlConnectorVersion,
-    "edu.ucar" % "netcdfAll" % netcdfVersion
+    "edu.ucar" % "netcdfAll" % netcdfVersion,
+    "de.aktey.akka.visualmailbox" %% "collector" % "1.1.0",
+    Cinnamon.library.cinnamonCHMetricsElasticsearchReporter
 )
 
 resolvers += "Unidata Releases" at "https://artifacts.unidata.ucar.edu/repository/unidata-releases"
