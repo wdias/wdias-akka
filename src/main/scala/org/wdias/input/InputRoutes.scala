@@ -1,5 +1,9 @@
 package org.wdias.input
 
+import java.io.File
+import java.net.URL
+import sys.process._
+
 import akka.Done
 import akka.actor.{ActorRef, ActorSystem}
 import akka.event.Logging
@@ -10,7 +14,7 @@ import akka.http.scaladsl.server.directives.MethodDirectives.post
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Framing
+import akka.stream.scaladsl.{FileIO, Framing}
 import akka.util.{ByteString, Timeout}
 import org.wdias.`import`.ImportCSV.ImportCSVFile
 import org.wdias.`import`.ImportJSON.ImportJSONData
@@ -69,9 +73,24 @@ trait InputRoutes extends Protocols {
           }
         }
       },
+      (post & pathPrefix("file_test")) {
+        withoutSizeLimit {
+          extractDataBytes { bytes =>
+            val finishedWriting = bytes.runWith(FileIO.toPath(new File("/Users/gihan/example.mp4").toPath))
+
+            // we only want to respond once the incoming data has been handled:
+            onComplete(finishedWriting) { ioResult =>
+              complete("Finished writing data: " + ioResult)
+            }
+          }
+        }
+      },
       pathPrefix("fetch") {
         (post & entity(as[TimeSeriesEnvelop])) { fetchInfo =>
+          // TODO: Working for large files
+          // new URL("https://www.unidata.ucar.edu/software/netcdf/examples/test_echam_spectral-deflated.nc") #> new File("/tmp/test_echam_spectral-deflated.nc") !!
           val response: Future[StoreSuccess] = (importJSONRef ? ImportJSONData(fetchInfo)).mapTo[StoreSuccess]
+          log.info("Fetched test_echam_spectral-deflated.nc")
           onSuccess(response) { result =>
             complete(Created -> result.metadata)
           }

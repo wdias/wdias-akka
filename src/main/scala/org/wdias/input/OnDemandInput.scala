@@ -120,7 +120,7 @@ trait Service extends Protocols {
   }
 
   def fetchFileData(fetchInfo: TimeSeriesEnvelop): Future[Boolean] = {
-    // new URL("http://www.curwsl.org:8080/FLO2D/WL/water_level-2017-10-06.zip") #> new File("/tmp/water_level-2017-10-06.zip") !!
+     new URL("http://www.curwsl.org:8080/FLO2D/WL/water_level-2017-10-06.zip") #> new File("/tmp/water_level-2017-10-06.zip") !!
 
     val influxdb = InfluxDB.connect("localhost", 8086)
     val database = influxdb.selectDatabase("curw")
