@@ -38,6 +38,9 @@ libraryDependencies ++= Seq(
     "mysql" % "mysql-connector-java" % mysqlConnectorVersion,
     "edu.ucar" % "netcdfAll" % netcdfVersion,
     "de.aktey.akka.visualmailbox" %% "collector" % "1.1.0",
+    // Use Coda Hale Metrics and Akka instrumentation
+    Cinnamon.library.cinnamonCHMetrics,
+    Cinnamon.library.cinnamonAkka,
     Cinnamon.library.cinnamonCHMetricsElasticsearchReporter
 )
 
