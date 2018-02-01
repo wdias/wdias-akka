@@ -1,0 +1,15 @@
+{
+  "type": "Observed",
+  "station": {
+    "name": "Hanwella",
+    "latitude": 6.909722222,
+    "longitude": 80.08166667
+  },
+  "source": "HEC-HMS",
+  "unit": {
+    "unit": "m3/s",
+    "type": "Instantaneous"
+  },
+  "variable": "Precipitation",
+  "tags": ["Test1"]
+}

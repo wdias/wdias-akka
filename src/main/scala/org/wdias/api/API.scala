@@ -32,10 +32,13 @@ import org.wdias.constant._
 
 trait Service1 extends Protocols {
   implicit val system: ActorSystem
+
   implicit def executor: ExecutionContextExecutor
+
   implicit val materializer: Materializer
 
   def config: Config
+
   val logger: LoggingAdapter
 
   def createResponse(metaData: MetaData, result: QueryResult): TimeSeriesEnvelop = {
@@ -50,17 +53,17 @@ trait Service1 extends Protocols {
       val value: Double = record.allValues(5).toString.toDouble
       points = points :+ DataPoint(dateTime.format(formatter), value)
     }
-    val timeSeries = TimeSeries(points)
+    val timeSeries = Some(TimeSeries(points))
     println("Created Response TimeSeries")
-    TimeSeriesEnvelop(metaData, timeSeries)
+    TimeSeriesEnvelop(metaData, timeSeries, None)
   }
 
   def getObservedData(query: MetaData): Future[TimeSeriesEnvelop] = {
     val influxdb = InfluxDB.connect("localhost", 8086)
-    logger.info(query.source)
+    logger.info(query.moduleId)
     val database = influxdb.selectDatabase("curw")
 
-//    val influxQuery = "SELECT * FROM observed"
+    //    val influxQuery = "SELECT * FROM observed"
     val queryResult = database.query("SELECT * FROM observed")
 
     queryResult map { result =>
