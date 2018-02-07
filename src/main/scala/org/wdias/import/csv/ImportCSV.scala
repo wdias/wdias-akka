@@ -1,11 +1,11 @@
-package org.wdias.`import`
+package org.wdias.`import`.csv
 
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneId}
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
-import org.wdias.adapter.Adapter.StoreTimeSeries
+import org.wdias.adapter.scalar_adapter.ScalarAdapter.StoreTimeSeries
 import org.wdias.constant._
 
 import scala.concurrent.duration._
@@ -33,12 +33,12 @@ class ImportCSV extends Actor with ActorLogging {
       val zoneId = ZoneId.systemDefault
 
       source.map(_.split(",").toVector)
-          .foreach(line => {
-            val dateTime: LocalDateTime = LocalDateTime.parse(line(0), formatter)
-            val p = DataPoint(dateTime.format(formatter), line(1).toDouble)
+        .foreach(line => {
+          val dateTime: LocalDateTime = LocalDateTime.parse(line(0), formatter)
+          val p = DataPoint(dateTime.format(formatter), line(1).toDouble)
 
-            points = points :+ p
-      })
+          points = points :+ p
+        })
 
       adapterRef forward StoreTimeSeries(TimeSeriesEnvelop(metaData, Some(TimeSeries(points)), None))
 

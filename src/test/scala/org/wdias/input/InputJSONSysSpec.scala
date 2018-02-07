@@ -3,8 +3,7 @@ import akka.http.scaladsl.Http
 import akka.testkit.{ImplicitSender, TestActors, TestKit}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-import org.wdias.`import`.ImportJSON
-import org.wdias.adapter.Adapter
+import org.wdias.`import`.json.ImportJSON
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, RequestEntity}
@@ -13,6 +12,7 @@ import org.wdias.constant._
 import org.wdias.input.Service
 import org.wdias.input.OnDemandInput.{bindingFuture, routes, system}
 import akka.http.scaladsl.model._
+import org.wdias.adapter.grid_adapter.GridAdapter
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -29,7 +29,7 @@ class InputJSONSysSpec() extends TestKit(ActorSystem("input-api"))
   override implicit val executor = system.dispatcher
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  val adapter = system.actorOf(Props[Adapter], "adapter")
+  val adapter = system.actorOf(Props[GridAdapter], "adapter")
   val importJSONRef: ActorRef = system.actorOf(Props[ImportJSON], "importJSON")
 
   val bindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port"))

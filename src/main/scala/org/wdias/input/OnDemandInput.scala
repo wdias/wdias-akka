@@ -44,10 +44,10 @@ import sys.process._
 import java.net.URL
 import java.io.File
 
-import org.wdias.`import`.ImportJSON
-import org.wdias.`import`.ImportJSON.ImportJSONData
-import org.wdias.adapter.Adapter
-import org.wdias.adapter.Adapter.StoreSuccess
+import org.wdias.`import`.json.ImportJSON
+import org.wdias.`import`.json.ImportJSON.ImportJSONData
+import org.wdias.adapter.scalar_adapter.ScalarAdapter.StoreSuccess
+import org.wdias.adapter.grid_adapter.GridAdapter
 
 trait Service extends Protocols {
   implicit val system: ActorSystem
@@ -209,7 +209,7 @@ object OnDemandInput extends App with Service {
   override implicit val executor = system.dispatcher
   override implicit val materializer = ActorMaterializer()
 
-  val adapter = system.actorOf(Props[Adapter], "adapter")
+  val adapter = system.actorOf(Props[GridAdapter], "adapter")
   override implicit val importJSONRef: ActorRef = system.actorOf(Props[ImportJSON], "importJSON")
 
   override val config = ConfigFactory.load()

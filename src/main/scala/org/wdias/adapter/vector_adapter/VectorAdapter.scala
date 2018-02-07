@@ -1,4 +1,4 @@
-package org.wdias.adapter
+package org.wdias.adapter.vector_adapter
 
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneId}
@@ -7,6 +7,7 @@ import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.pattern.pipe
 import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
+import org.wdias.adapter.vector_adapter.VectorAdapter._
 import org.wdias.extensions.ExtensionHandler.ExtensionHandlerData
 import ucar.ma2.DataType
 import ucar.nc2.{Attribute, Dimension}
@@ -20,7 +21,7 @@ import org.wdias.constant._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-object Adapter {
+object VectorAdapter {
 
   case class StoreTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
   case class StoreValidatedTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
@@ -35,9 +36,7 @@ object Adapter {
 
 }
 
-class Adapter extends Actor with ActorLogging {
-
-  import Adapter._
+class ScalarAdapter extends Actor with ActorLogging {
 
   implicit val timeout: Timeout = Timeout(15 seconds)
 

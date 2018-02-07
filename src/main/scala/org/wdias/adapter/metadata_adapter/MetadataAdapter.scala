@@ -1,27 +1,11 @@
-package org.wdias.adapter
+package org.wdias.adapter.metadata_adapter
 
 import akka.actor.{Actor, ActorLogging}
-import org.wdias.adapter.models._
+import org.wdias.adapter.extension_adapter.ExtensionAdapter._
+import org.wdias.adapter.metadata_adapter.models.{LocationsDAO, ParametersDAO, TimeSeriesMetadataDAO, TimeStepsDAO}
 import org.wdias.constant._
-import org.wdias.constant.TimeSeriesEnvelop
 
-object ExtensionAdapter {
-
-  case class GetValidationConfig(timeSeriesEnvelop: TimeSeriesEnvelop)
-
-  case class GetTransformationConfig(timeSeriesEnvelop: TimeSeriesEnvelop)
-
-  case class GetInterpolationConfig(timeSeriesEnvelop: TimeSeriesEnvelop)
-
-  case class ValidationConfig(name: String, minValue: Double, maxValue: Double)
-
-  case class ValidationConfigResult(option: Option[ValidationConfig], timeSeriesEnvelop: TimeSeriesEnvelop)
-
-}
-
-class ExtensionAdapter extends Actor with ActorLogging {
-
-  import ExtensionAdapter._
+class MetadataAdapter extends Actor with ActorLogging {
 
   var validationConfigs = Set(
     ValidationConfig("Hanwella", 0, 120),

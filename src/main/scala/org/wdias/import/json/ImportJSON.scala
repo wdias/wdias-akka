@@ -1,8 +1,8 @@
-package org.wdias.`import`
+package org.wdias.`import`.json
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
-import org.wdias.adapter.Adapter.StoreTimeSeries
+import org.wdias.adapter.scalar_adapter.ScalarAdapter.StoreTimeSeries
 import org.wdias.constant.TimeSeriesEnvelop
 
 import scala.concurrent.duration._

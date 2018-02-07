@@ -10,9 +10,9 @@ import akka.http.scaladsl.server._
 import Directives._
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import org.wdias.`import`.ImportJSON
-import org.wdias.`import`.ImportJSON.ImportJSONData
-import org.wdias.adapter.Adapter
+import org.wdias.`import`.json.ImportJSON
+import org.wdias.`import`.json.ImportJSON.ImportJSONData
+import org.wdias.adapter.grid_adapter.GridAdapter
 import org.wdias.constant._
 import org.wdias.input.OnDemandInput.system
 

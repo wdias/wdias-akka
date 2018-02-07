@@ -1,12 +1,14 @@
-package org.wdias.api
+package org.wdias.timeseries_api
 
 import akka.actor.{ActorRef, ActorSystem, DeadLetter, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import org.wdias.adapter.{Adapter, ExtensionAdapter}
-import org.wdias.export.{ExportCSV, ExportJSON}
+import org.wdias.adapter.extension_adapter.ExtensionAdapter
+import org.wdias.adapter.grid_adapter.GridAdapter
+import org.wdias.export.csv.ExportCSV
+import org.wdias.export.json.ExportJSON
 import org.wdias.extensions.ExtensionHandler
 import org.wdias.input.InputServer.system
 import org.wdias.util.DeadLetterMonitorActor
@@ -28,7 +30,7 @@ object APIServer extends App with RESTAPIRoutes {
   // Create Actors
   implicit val extensionAdapterRef: ActorRef = system.actorOf(Props[ExtensionAdapter], "extensionAdapter")
   implicit val extensionHandlerRef: ActorRef = system.actorOf(Props[ExtensionHandler], "extensionHandler")
-  implicit val adapter: ActorRef = system.actorOf(Props[Adapter], "adapter")
+  implicit val adapter: ActorRef = system.actorOf(Props[GridAdapter], "adapter")
   val exportJSONRef: ActorRef = system.actorOf(Props[ExportJSON], "exportJSON")
   val exportCSVRef: ActorRef = system.actorOf(Props[ExportCSV], "exportCSV")
   // Util Actors

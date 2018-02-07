@@ -1,4 +1,4 @@
-package org.wdias.api
+package org.wdias.export
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.event.Logging
@@ -10,22 +10,21 @@ import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import org.wdias.adapter.Adapter.Result
+import org.wdias.adapter.scalar_adapter.ScalarAdapter.Result
 import org.wdias.constant.{MetaData, Protocols}
-import org.wdias.export.ExportJSON.ExportJSONData
-import org.wdias.input.InputRoutes
+import org.wdias.export.json.ExportJSON.ExportJSONData
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
 // REST API Routes class
-trait RESTAPIRoutes extends Protocols {
+trait ExportRoutes extends Protocols {
   // abstract system value will be provide by app
   implicit def system: ActorSystem
   implicit def materializer: ActorMaterializer
 
   // logging for InputRoutes
-  lazy val log = Logging(system, classOf[InputRoutes])
+  lazy val log = Logging(system, classOf[ExportRoutes])
 
   // Other dependencies required by InputRoutes
   def exportJSONRef: ActorRef

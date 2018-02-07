@@ -2,16 +2,17 @@ package org.wdias.extensions
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify, PoisonPill, Props}
 import akka.util.Timeout
-import org.wdias.adapter.ExtensionAdapter._
 import akka.pattern.ask
-import org.wdias.adapter.Adapter.StoreValidatedTimeSeries
 import org.wdias.constant.TimeSeriesEnvelop
-import org.wdias.extensions.Validation.ValidationData
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import akka.pattern.pipe
+import org.wdias.adapter.extension_adapter.ExtensionAdapter.{GetValidationConfig, ValidationConfigResult}
+import org.wdias.adapter.scalar_adapter.ScalarAdapter.StoreValidatedTimeSeries
+import org.wdias.extensions.validation.Validation
+import org.wdias.extensions.validation.Validation.ValidationData
 
 object ExtensionHandler {
   case class ExtensionHandlerData(timeSeriesEnvelop: TimeSeriesEnvelop)

@@ -1,24 +1,15 @@
-package org.wdias.`import`
+package org.wdias.extensions.interpolation
 
-import java.time.{LocalDateTime, ZoneId}
-import java.time.format.DateTimeFormatter
-
-import akka.Done
-import akka.pattern.{ask, pipe}
 import akka.actor.{Actor, ActorIdentity, ActorRef, Identify}
-import akka.http.scaladsl.server.directives.FileInfo
-import akka.stream.scaladsl.{Framing, Source}
-import com.paulgoldbaum.influxdbclient.Parameter.Precision
-import com.paulgoldbaum.influxdbclient.Point
-import org.wdias.adapter.Adapter.{StoreFailure, StoreSuccess, StoreTimeSeries}
-import org.wdias.constant.{MetaData, TimeSeriesEnvelop}
 import akka.util.Timeout
+import org.wdias.adapter.scalar_adapter.ScalarAdapter.{StoreSuccess, StoreTimeSeries}
 
-import scala.concurrent._
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent._
-import ExecutionContext.Implicits.global
+import akka.pattern.{ask, pipe}
+import org.wdias.constant.TimeSeriesEnvelop
+import org.wdias.extensions.interpolation.Interpolation.InterpolationData
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Interpolation {
 
@@ -27,10 +18,6 @@ object Interpolation {
 }
 
 class Interpolation extends Actor {
-
-  import Interpolation._
-
-  import context.dispatcher
 
   implicit val timeout: Timeout = Timeout(15 seconds)
 

@@ -1,26 +1,31 @@
-package org.wdias.export
+package org.wdias.export.json
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
-import org.wdias.adapter.Adapter.GetTimeSeries
+import org.wdias.adapter.scalar_adapter.ScalarAdapter.GetTimeSeries
 import org.wdias.constant.MetaData
 
 import scala.concurrent.duration._
 
-object ExportCSV {
-  case class ExportCSVFile(metaData: MetaData)
+object ExportJSON {
+
+  case class ExportJSONData(metaData: MetaData)
+
 }
 
-class ExportCSV extends Actor with ActorLogging {
-  import ExportCSV._
+class ExportJSON extends Actor with ActorLogging {
+
+  import ExportJSON._
+
   implicit val timeout: Timeout = Timeout(15 seconds)
 
   var adapterRef: ActorRef = _
   context.actorSelection("/user/adapter") ! Identify(None)
 
   def receive = {
-    case ExportCSVFile(metaData) =>
-      log.debug("Export CSV: {}", metaData)
+    case ExportJSONData(metaData) =>
+      log.info("Export JSON: {}", metaData)
+      log.info("Sender: {}, To: {}", sender(), adapterRef)
       adapterRef forward GetTimeSeries(metaData)
 
     case ActorIdentity(_, Some(ref)) =>

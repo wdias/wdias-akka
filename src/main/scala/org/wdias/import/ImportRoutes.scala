@@ -1,9 +1,9 @@
-package org.wdias.input
+package org.wdias.`import`
 
 import java.io.File
 import java.net.URL
-import sys.process._
 
+import sys.process._
 import akka.Done
 import akka.actor.{ActorRef, ActorSystem}
 import akka.event.Logging
@@ -25,13 +25,13 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 // Input Routes class
-trait InputRoutes extends Protocols {
+trait ImportRoutes extends Protocols {
   // abstract system value will be provide by app
   implicit def system: ActorSystem
   implicit def materializer: ActorMaterializer
 
   // logging for InputRoutes
-  lazy val log = Logging(system, classOf[InputRoutes])
+  lazy val log = Logging(system, classOf[ImportRoutes])
 
   // Other dependencies required by InputRoutes
   def importJSONRef: ActorRef
@@ -41,7 +41,7 @@ trait InputRoutes extends Protocols {
   implicit lazy val timeout: Timeout = Timeout(5.seconds) // TODO: Obtain from config
 
   // --- All Input Routes ---
-  lazy val inputRoutes: Route = {
+  lazy val iportRoutes: Route = {
     concat(
       pathPrefix("observed") {
         (post & entity(as[TimeSeriesEnvelop])) { timeSeriesEnvelop =>

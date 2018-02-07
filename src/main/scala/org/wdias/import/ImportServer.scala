@@ -1,4 +1,4 @@
-package org.wdias.input
+package org.wdias.`import`
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
@@ -17,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.StdIn
 
 // Input Main Class
-object InputServer extends App with InputRoutes {
+object ImportServer extends App with ImportRoutes {
   // Load config
   val config = ConfigFactory.load()
   // Bootstrapping Server
@@ -35,7 +35,7 @@ object InputServer extends App with InputRoutes {
   val importCSVRef: ActorRef = system.actorOf(Props[ImportCSV], "importCSV")
 
   // From InputRoutes trait
-  lazy val routes: Route = inputRoutes
+  lazy val routes: Route = iportRoutes
 
   val serverBindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port-input"))
 

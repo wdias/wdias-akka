@@ -1,4 +1,4 @@
-package org.wdias.adapter.models
+package org.wdias.adapter.metadata_adapter.models
 
 import org.wdias.constant.ParameterType.ParameterType
 import slick.ast.BaseTypedType

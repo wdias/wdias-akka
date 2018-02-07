@@ -1,4 +1,4 @@
-package org.wdias.adapter.models
+package org.wdias.adapter.metadata_adapter.models
 
 import slick.jdbc.MySQLProfile.api._
 import slick.jdbc.meta.MTable
