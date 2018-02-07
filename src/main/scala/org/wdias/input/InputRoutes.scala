@@ -18,7 +18,7 @@ import akka.stream.scaladsl.{FileIO, Framing}
 import akka.util.{ByteString, Timeout}
 import org.wdias.`import`.csv.ImportCSV.ImportCSVFile
 import org.wdias.`import`.json.ImportJSON.ImportJSONData
-import org.wdias.adapter.scalar_adapter.ScalarAdapter.StoreSuccess
+import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreSuccess
 import org.wdias.constant.{MetaData, Protocols, TimeSeriesEnvelop}
 
 import scala.concurrent.Future

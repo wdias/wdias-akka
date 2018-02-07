@@ -1,4 +1,4 @@
-package org.wdias.adapter.scalar_adapter
+package org.wdias.adapters.scalar_adapter
 
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneId}
@@ -7,7 +7,7 @@ import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.pattern.pipe
 import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
-import org.wdias.adapter.scalar_adapter.ScalarAdapter._
+import org.wdias.adapters.scalar_adapter.ScalarAdapter._
 import org.wdias.extensions.ExtensionHandler.ExtensionHandlerData
 import ucar.ma2.DataType
 import ucar.nc2.{Attribute, Dimension}

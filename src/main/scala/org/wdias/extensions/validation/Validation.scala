@@ -2,7 +2,7 @@ package org.wdias.extensions.validation
 
 import akka.actor.{Actor, ActorLogging}
 import akka.util.Timeout
-import org.wdias.adapter.extension_adapter.ExtensionAdapter.ValidationConfig
+import org.wdias.adapters.extension_adapter.ExtensionAdapter.ValidationConfig
 import org.wdias.constant.TimeSeriesEnvelop
 import org.wdias.extensions.ExtensionHandler.ExtensionHandlerResult
 import org.wdias.extensions.validation.Validation.ValidationData

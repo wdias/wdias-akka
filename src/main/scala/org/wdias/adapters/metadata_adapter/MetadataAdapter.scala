@@ -1,8 +1,8 @@
-package org.wdias.adapter.metadata_adapter
+package org.wdias.adapters.metadata_adapter
 
 import akka.actor.{Actor, ActorLogging}
-import org.wdias.adapter.extension_adapter.ExtensionAdapter._
-import org.wdias.adapter.metadata_adapter.models.{LocationsDAO, ParametersDAO, TimeSeriesMetadataDAO, TimeStepsDAO}
+import org.wdias.adapters.extension_adapter.ExtensionAdapter._
+import org.wdias.adapters.metadata_adapter.models.{LocationsDAO, ParametersDAO, TimeSeriesMetadataDAO, TimeStepsDAO}
 import org.wdias.constant._
 
 class MetadataAdapter extends Actor with ActorLogging {

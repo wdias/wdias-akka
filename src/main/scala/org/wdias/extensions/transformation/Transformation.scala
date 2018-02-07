@@ -2,7 +2,7 @@ package org.wdias.extensions.transformation
 
 import akka.actor.{Actor, ActorIdentity, ActorRef, Identify}
 import akka.util.Timeout
-import org.wdias.adapter.scalar_adapter.ScalarAdapter.{StoreSuccess, StoreTimeSeries}
+import org.wdias.adapters.scalar_adapter.ScalarAdapter.{StoreSuccess, StoreTimeSeries}
 import org.wdias.constant.TimeSeriesEnvelop
 import org.wdias.extensions.transformation.Transformation.TransformationData
 

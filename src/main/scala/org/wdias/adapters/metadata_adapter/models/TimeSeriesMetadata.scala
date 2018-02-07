@@ -1,4 +1,4 @@
-package org.wdias.adapter.metadata_adapter.models
+package org.wdias.adapters.metadata_adapter.models
 
 import org.wdias.constant.ValueType.ValueType
 import org.wdias.constant.TimeSeriesType.TimeSeriesType

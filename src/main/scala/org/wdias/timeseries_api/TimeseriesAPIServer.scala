@@ -5,8 +5,8 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import org.wdias.adapter.extension_adapter.ExtensionAdapter
-import org.wdias.adapter.grid_adapter.GridAdapter
+import org.wdias.adapters.extension_adapter.ExtensionAdapter
+import org.wdias.adapters.grid_adapter.GridAdapter
 import org.wdias.export.csv.ExportCSV
 import org.wdias.export.json.ExportJSON
 import org.wdias.extensions.ExtensionHandler
@@ -17,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.StdIn
 
 // REST API Main Class
-object APIServer extends App with RESTAPIRoutes {
+object TimeseriesAPIServer extends App with TimeseriesAPIRoutes {
   // Load config
   val config = ConfigFactory.load()
   // Bootstrapping Server

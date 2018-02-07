@@ -12,7 +12,7 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import org.wdias.`import`.json.ImportJSON
 import org.wdias.`import`.json.ImportJSON.ImportJSONData
-import org.wdias.adapter.grid_adapter.GridAdapter
+import org.wdias.adapters.grid_adapter.GridAdapter
 import org.wdias.constant._
 import org.wdias.input.OnDemandInput.system
 

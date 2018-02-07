@@ -46,8 +46,8 @@ import java.io.File
 
 import org.wdias.`import`.json.ImportJSON
 import org.wdias.`import`.json.ImportJSON.ImportJSONData
-import org.wdias.adapter.scalar_adapter.ScalarAdapter.StoreSuccess
-import org.wdias.adapter.grid_adapter.GridAdapter
+import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreSuccess
+import org.wdias.adapters.grid_adapter.GridAdapter
 
 trait Service extends Protocols {
   implicit val system: ActorSystem

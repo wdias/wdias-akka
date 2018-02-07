@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import org.wdias.adapter.scalar_adapter.ScalarAdapter.Result
+import org.wdias.adapters.scalar_adapter.ScalarAdapter.Result
 import org.wdias.constant.{MetaData, Protocols}
 import org.wdias.export.json.ExportJSON.ExportJSONData
 
@@ -34,11 +34,11 @@ trait ExportRoutes extends Protocols {
   implicit lazy val timeout: Timeout = Timeout(15.seconds) // TODO: Obtain from config
 
   // --- All Input Routes ---
-  lazy val restAPIRoutes: Route = {
+  lazy val exportRoutes: Route = {
     concat(
-      pathPrefix("observed") {
+      path("export" / "json" / "raw") {
         (post & entity(as[MetaData])) { metaData: MetaData =>
-          log.info("GET request: observed > {}", metaData)
+          log.info("/export GET request: > {}", metaData)
           val response: Future[Result] = (exportJSONRef ? ExportJSONData(metaData)).mapTo[Result]
           onSuccess(response) { result =>
             complete(Created -> result.timeSeriesEnvelop)

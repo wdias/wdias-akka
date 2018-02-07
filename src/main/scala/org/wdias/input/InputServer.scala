@@ -8,8 +8,8 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import org.wdias.`import`.csv.ImportCSV
 import org.wdias.`import`.json.ImportJSON
-import org.wdias.adapter.extension_adapter.ExtensionAdapter
-import org.wdias.adapter.grid_adapter.GridAdapter
+import org.wdias.adapters.extension_adapter.ExtensionAdapter
+import org.wdias.adapters.grid_adapter.GridAdapter
 import org.wdias.extensions.ExtensionHandler
 import org.wdias.input.OnDemandInput.{config, routes}
 

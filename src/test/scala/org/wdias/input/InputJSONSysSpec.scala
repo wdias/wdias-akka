@@ -12,7 +12,7 @@ import org.wdias.constant._
 import org.wdias.input.Service
 import org.wdias.input.OnDemandInput.{bindingFuture, routes, system}
 import akka.http.scaladsl.model._
-import org.wdias.adapter.grid_adapter.GridAdapter
+import org.wdias.adapters.grid_adapter.GridAdapter
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}

@@ -2,7 +2,7 @@ package org.wdias.`import`.json
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
-import org.wdias.adapter.scalar_adapter.ScalarAdapter.StoreTimeSeries
+import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreTimeSeries
 import org.wdias.constant.TimeSeriesEnvelop
 
 import scala.concurrent.duration._
@@ -20,7 +20,7 @@ class ImportJSON extends Actor with ActorLogging {
   implicit val timeout: Timeout = Timeout(15 seconds)
 
   var adapterRef: ActorRef = _
-  context.actorSelection("/user/adapter") ! Identify(None)
+  context.actorSelection("/user/scalarAdapter") ! Identify(None)
 
   def receive: Receive = {
     case ImportJSONData(timeSeriesEnvelop) =>

@@ -2,7 +2,7 @@ package org.wdias.extensions.interpolation
 
 import akka.actor.{Actor, ActorIdentity, ActorRef, Identify}
 import akka.util.Timeout
-import org.wdias.adapter.scalar_adapter.ScalarAdapter.{StoreSuccess, StoreTimeSeries}
+import org.wdias.adapters.scalar_adapter.ScalarAdapter.{StoreSuccess, StoreTimeSeries}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

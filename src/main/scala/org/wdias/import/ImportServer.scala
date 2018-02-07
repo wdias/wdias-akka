@@ -8,8 +8,8 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import org.wdias.`import`.csv.ImportCSV
 import org.wdias.`import`.json.ImportJSON
-import org.wdias.adapter.extension_adapter.ExtensionAdapter
-import org.wdias.adapter.grid_adapter.GridAdapter
+import org.wdias.adapters.extension_adapter.ExtensionAdapter
+import org.wdias.adapters.grid_adapter.GridAdapter
 import org.wdias.extensions.ExtensionHandler
 import org.wdias.input.OnDemandInput.{config, routes}
 
@@ -35,7 +35,7 @@ object ImportServer extends App with ImportRoutes {
   val importCSVRef: ActorRef = system.actorOf(Props[ImportCSV], "importCSV")
 
   // From InputRoutes trait
-  lazy val routes: Route = iportRoutes
+  lazy val routes: Route = importRoutes
 
   val serverBindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port-input"))
 

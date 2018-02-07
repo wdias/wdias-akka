@@ -18,7 +18,7 @@ import akka.stream.scaladsl.{FileIO, Framing}
 import akka.util.{ByteString, Timeout}
 import org.wdias.`import`.csv.ImportCSV.ImportCSVFile
 import org.wdias.`import`.json.ImportJSON.ImportJSONData
-import org.wdias.adapter.scalar_adapter.ScalarAdapter.StoreSuccess
+import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreSuccess
 import org.wdias.constant.{MetaData, Protocols, TimeSeriesEnvelop}
 
 import scala.concurrent.Future
@@ -41,10 +41,11 @@ trait ImportRoutes extends Protocols {
   implicit lazy val timeout: Timeout = Timeout(5.seconds) // TODO: Obtain from config
 
   // --- All Input Routes ---
-  lazy val iportRoutes: Route = {
+  lazy val importRoutes: Route = {
     concat(
-      pathPrefix("observed") {
+      path("import" / "json" / "raw") {
         (post & entity(as[TimeSeriesEnvelop])) { timeSeriesEnvelop =>
+          log.info("/import POST request: > {}", timeSeriesEnvelop)
           val response: Future[StoreSuccess] = (importJSONRef ? ImportJSONData(timeSeriesEnvelop)).mapTo[StoreSuccess]
           onSuccess(response) { result =>
             complete(Created -> result.metadata)

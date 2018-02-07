@@ -9,8 +9,8 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import akka.pattern.pipe
-import org.wdias.adapter.extension_adapter.ExtensionAdapter.{GetValidationConfig, ValidationConfigResult}
-import org.wdias.adapter.scalar_adapter.ScalarAdapter.StoreValidatedTimeSeries
+import org.wdias.adapters.extension_adapter.ExtensionAdapter.{GetValidationConfig, ValidationConfigResult}
+import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreValidatedTimeSeries
 import org.wdias.extensions.validation.Validation
 import org.wdias.extensions.validation.Validation.ValidationData
 

@@ -5,8 +5,8 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import org.wdias.adapter.extension_adapter.ExtensionAdapter
-import org.wdias.adapter.grid_adapter.GridAdapter
+import org.wdias.adapters.extension_adapter.ExtensionAdapter
+import org.wdias.adapters.grid_adapter.GridAdapter
 import org.wdias.export.csv.ExportCSV
 import org.wdias.export.json.ExportJSON
 import org.wdias.extensions.ExtensionHandler
@@ -39,7 +39,7 @@ object ExportServer extends App with ExportRoutes {
   system.eventStream.subscribe(deadLetterMonitorActor, classOf[DeadLetter])
 
   // From InputRoutes trait
-  lazy val routes: Route = restAPIRoutes
+  lazy val routes: Route = exportRoutes
 
   val serverBindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port-api"))
 

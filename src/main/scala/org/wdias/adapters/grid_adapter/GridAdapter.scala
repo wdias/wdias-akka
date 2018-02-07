@@ -1,4 +1,4 @@
-package org.wdias.adapter.vector_adapter
+package org.wdias.adapters.grid_adapter
 
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneId}
@@ -7,7 +7,7 @@ import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.pattern.pipe
 import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
-import org.wdias.adapter.vector_adapter.VectorAdapter._
+import org.wdias.adapters.grid_adapter.GridAdapter._
 import org.wdias.extensions.ExtensionHandler.ExtensionHandlerData
 import ucar.ma2.DataType
 import ucar.nc2.{Attribute, Dimension}
@@ -21,7 +21,7 @@ import org.wdias.constant._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-object VectorAdapter {
+object GridAdapter {
 
   case class StoreTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
   case class StoreValidatedTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
@@ -36,7 +36,8 @@ object VectorAdapter {
 
 }
 
-class ScalarAdapter extends Actor with ActorLogging {
+class GridAdapter extends Actor with ActorLogging {
+
 
   implicit val timeout: Timeout = Timeout(15 seconds)
 
@@ -51,7 +52,7 @@ class ScalarAdapter extends Actor with ActorLogging {
     val records: List[Record] = result.series.head.records
     records.foreach { record =>
       log.info(record.allValues.toString())
-      val dateTimeStr: String = record.allValues(0).toString.split('Z')(0)
+      val dateTimeStr: String = record.allValues.head.toString.split('Z')(0)
       val dateTime = LocalDateTime.parse(dateTimeStr)
       val value: Double = record.allValues(valueIndex).toString.toDouble
       points = points :+ DataPoint(dateTime.format(formatter), value)
@@ -65,7 +66,7 @@ class ScalarAdapter extends Actor with ActorLogging {
     val location = "/tmp/testWrite.nc"
 
     if(Files.exists(Paths.get(location))) {
-      return null
+      return
     }
     println("File does not exists. Create new ", location)
     import ucar.nc2.NetcdfFileWriter
@@ -112,7 +113,6 @@ class ScalarAdapter extends Actor with ActorLogging {
       case e: Exception => System.err.printf("ERROR creating file %s%n%s", location, e.getMessage);
     }
     writer.close()
-    null
   }
 
   def receive: Receive = {
