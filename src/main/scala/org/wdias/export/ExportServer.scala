@@ -10,7 +10,6 @@ import org.wdias.adapters.grid_adapter.GridAdapter
 import org.wdias.export.csv.ExportCSV
 import org.wdias.export.json.ExportJSON
 import org.wdias.extensions.ExtensionHandler
-import org.wdias.input.InputServer.system
 import org.wdias.util.DeadLetterMonitorActor
 
 import scala.concurrent.{ExecutionContext, Future}

@@ -13,7 +13,6 @@ import akka.util.Timeout
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.Result
 import org.wdias.constant.{MetaData, Protocols}
 import org.wdias.export.json.ExportJSON.ExportJSONData
-import org.wdias.input.InputRoutes
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -25,7 +24,7 @@ trait TimeseriesAPIRoutes extends Protocols {
   implicit def materializer: ActorMaterializer
 
   // logging for InputRoutes
-  lazy val log = Logging(system, classOf[InputRoutes])
+  lazy val log = Logging(system, classOf[TimeseriesAPIRoutes])
 
   // Other dependencies required by InputRoutes
   def exportJSONRef: ActorRef
