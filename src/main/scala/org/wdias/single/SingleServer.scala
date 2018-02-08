@@ -9,7 +9,7 @@ import org.wdias.`import`.SingleRoutes
 import org.wdias.`import`.csv.ImportCSV
 import org.wdias.`import`.json.ImportJSON
 import org.wdias.adapters.extension_adapter.ExtensionAdapter
-import org.wdias.adapters.grid_adapter.GridAdapter
+import org.wdias.adapters.metadata_adapter.MetadataAdapter
 import org.wdias.adapters.scalar_adapter.ScalarAdapter
 import org.wdias.export.csv.ExportCSV
 import org.wdias.export.json.ExportJSON
@@ -33,7 +33,8 @@ object SingleServer extends App with SingleRoutes {
   // Create Export Actors
   implicit val extensionAdapterRef: ActorRef = system.actorOf(Props[ExtensionAdapter], "extensionAdapter")
   implicit val extensionHandlerRef: ActorRef = system.actorOf(Props[ExtensionHandler], "extensionHandler")
-  implicit val scalarAdapter: ActorRef = system.actorOf(Props[ScalarAdapter], "scalarAdapter")
+  implicit val scalarAdapterRef: ActorRef = system.actorOf(Props[ScalarAdapter], "scalarAdapter")
+  implicit val metadataAdapterRef: ActorRef = system.actorOf(Props[MetadataAdapter], "metadataAdapter")
   val exportJSONRef: ActorRef = system.actorOf(Props[ExportJSON], "exportJSON")
   val exportCSVRef: ActorRef = system.actorOf(Props[ExportCSV], "exportCSV")
   // Create Import Actors
@@ -53,7 +54,7 @@ object SingleServer extends App with SingleRoutes {
 
   val serverBindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port-single"))
 
-  logImportCSVRoutes.info("Server online at http://{}:{}/\nPress RETURN to stop...", config.getString("http.interface"), config.getInt("http.port-single"))
+  logSingleRoutes.info("Server online at http://{}:{}/\nPress RETURN to stop...", config.getString("http.interface"), config.getInt("http.port-single"))
 
   StdIn.readLine()
 

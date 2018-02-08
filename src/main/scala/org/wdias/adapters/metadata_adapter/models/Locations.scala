@@ -25,6 +25,13 @@ object LocationsDAO extends TableQuery(new Locations(_)) with DBComponent {
     db.run(this.filter(_.locationId === locationId).result).map(_.headOption)
   }
 
+  def find(locationId: String, name: String): Future[Seq[Location]] = {
+    val q1 = if(locationId.isEmpty) this else this.filter(_.locationId === locationId)
+    val q2 = if(name.isEmpty) q1 else q1.filter(_.name === name)
+    val action = q2.result
+    db.run(action)
+  }
+
   def create(location: Location): Future[Int] = {
     val tables = List(LocationsDAO)
 
