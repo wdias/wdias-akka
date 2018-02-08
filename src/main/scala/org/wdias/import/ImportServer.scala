@@ -39,14 +39,14 @@ object ImportServer extends App with ImportRoutes {
 
   val serverBindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port-input"))
 
-  log.info("Server online at http://{}:{}/\nPress RETURN to stop...", config.getString("http.interface"), config.getInt("http.port-input"))
+  logImportCSVRoutes.info("Server online at http://{}:{}/\nPress RETURN to stop...", config.getString("http.interface"), config.getInt("http.port-input"))
 
   StdIn.readLine()
 
   serverBindingFuture
     .flatMap(_.unbind())
     .onComplete { done =>
-      done.failed.map { ex => log.error(ex, "Failed unbinding") }
+      done.failed.map { ex => logImportCSVRoutes.error(ex, "Failed unbinding") }
       system.terminate()
     }
 }

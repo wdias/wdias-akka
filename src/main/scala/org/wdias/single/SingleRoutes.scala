@@ -31,12 +31,6 @@ trait SingleRoutes extends ImportRoutes with ExportRoutes {
   implicit def system: ActorSystem
   implicit def materializer: ActorMaterializer
 
-  // logging for InputRoutes
-  override lazy val log = Logging(system, classOf[SingleRoutes])
-
-  // Required by the `ask` (?) method below
-  override implicit lazy val timeout: Timeout = Timeout(5.seconds) // TODO: Obtain from config
-
   // --- All Input Routes ---
   lazy val singleRoutes: Route = {
     concat(
