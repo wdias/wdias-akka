@@ -1,50 +1,20 @@
 package org.wdias.export
 
-import akka.actor.{ActorRef, ActorSystem}
 import akka.event.Logging
-import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.directives.MethodDirectives.post
-import akka.http.scaladsl.server.directives.RouteDirectives.complete
-import akka.pattern.ask
-import akka.stream.ActorMaterializer
-import akka.util.Timeout
-import org.wdias.adapters.scalar_adapter.ScalarAdapter.Result
-import org.wdias.constant.{MetaData, Protocols}
-import org.wdias.export.json.ExportJSON.ExportJSONData
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
+import org.wdias.export.csv.ExportCSVRoutes
+import org.wdias.export.json.ExportJSONRoutes
 
 // REST API Routes class
-trait ExportRoutes extends Protocols {
-  // abstract system value will be provide by app
-  implicit def system: ActorSystem
-  implicit def materializer: ActorMaterializer
-
+trait ExportRoutes extends ExportJSONRoutes with ExportCSVRoutes {
   // logging for InputRoutes
-  lazy val log = Logging(system, classOf[ExportRoutes])
-
-  // Other dependencies required by InputRoutes
-  def exportJSONRef: ActorRef
-  def exportCSVRef: ActorRef
-
-  // Required by the `ask` (?) method below
-  implicit lazy val timeout: Timeout = Timeout(15.seconds) // TODO: Obtain from config
-
+  lazy val logExportRoutes = Logging(system, classOf[ExportRoutes])
   // --- All Input Routes ---
   lazy val exportRoutes: Route = {
     concat(
-      path("export" / "json" / "raw") {
-        (post & entity(as[MetaData])) { metaData: MetaData =>
-          log.info("/export GET request: > {}", metaData)
-          val response: Future[Result] = (exportJSONRef ? ExportJSONData(metaData)).mapTo[Result]
-          onSuccess(response) { result =>
-            complete(Created -> result.timeSeriesEnvelop)
-          }
-        }
-      }
+      exportJSONRoutes,
+      exportCSVRoutes
     )
   }
 }

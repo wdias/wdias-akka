@@ -43,14 +43,14 @@ object ExportServer extends App with ExportRoutes {
 
   val serverBindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(routes, config.getString("http.interface"), config.getInt("http.port-api"))
 
-  log.info("Server online at http://{}:{}/\nPress RETURN to stop...", config.getString("http.interface"), config.getInt("http.port-api"))
+  logExportRoutes.info("Server online at http://{}:{}/\nPress RETURN to stop...", config.getString("http.interface"), config.getInt("http.port-api"))
 
   StdIn.readLine()
 
   serverBindingFuture
     .flatMap(_.unbind())
     .onComplete { done =>
-      done.failed.map { ex => log.error(ex, "Failed unbinding") }
+      done.failed.map { ex => logExportRoutes.error(ex, "Failed unbinding") }
       system.terminate()
     }
 }
