@@ -20,6 +20,7 @@ import scala.concurrent.duration._
 trait TimeStepRoutes extends Protocols {
   // abstract system value will be provide by app
   implicit def system: ActorSystem
+
   implicit def materializer: ActorMaterializer
 
   // logging for InputRoutes
@@ -41,7 +42,7 @@ trait TimeStepRoutes extends Protocols {
             logTimeStepRoutes.info("/timeStep GET request: > {}", timeStepId)
             val response = (metadataAdapterRef ? GetTimeStepById(timeStepId)).mapTo[Option[TimeStepObj]]
             onSuccess(response) { timeStepObj: Option[TimeStepObj] =>
-              complete(Created -> timeStepObj.getOrElse(TimeStepObj("",TimeStepUnit.Second)).toTimeStep)
+              complete(Created -> timeStepObj.getOrElse(TimeStepObj("", TimeStepUnit.Second)).toTimeStep)
             }
           },
           // GET: Query on TimeSteps

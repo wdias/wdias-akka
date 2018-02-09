@@ -1,20 +1,22 @@
 package org.wdias.adapters.metadata_adapter.models
 
+import java.security.MessageDigest
+
 import org.wdias.constant.ValueType.ValueType
 import org.wdias.constant.TimeSeriesType.TimeSeriesType
 import slick.ast.BaseTypedType
 import slick.jdbc.JdbcType
 import slick.jdbc.MySQLProfile.api._
 import slick.jdbc.meta.MTable
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import org.wdias.constant.{ValueType, TimeSeriesType}
+import org.wdias.constant.{TimeSeriesType, ValueType}
 import org.wdias.constant._
 
 
-class TimeSeriesMetadataTable(tag: Tag) extends Table[MetadataIds](tag, "TIME_SERIES_METADATA") {
+class TimeSeriesMetadataTable(tag: Tag) extends Table[MetadataIdsObj](tag, "TIME_SERIES_METADATA") {
   implicit val valueTypeMapper: JdbcType[ValueType] with BaseTypedType[ValueType] = MappedColumnType.base[ValueType, String](
     e => e.toString,
     s => ValueType.withName(s)
@@ -31,8 +33,9 @@ class TimeSeriesMetadataTable(tag: Tag) extends Table[MetadataIds](tag, "TIME_SE
   def locationId = column[String]("LOCATION_ID", O.Length(255)) // Foreign Constrain
   def timeSeriesType = column[TimeSeriesType]("TIME_SERIES_TYPE") //
   def timeStepId = column[String]("TIME_STEP_ID", O.Length(255)) // Foreign Constrain
+  // TODO: Add `tags` support
 
-  override def * = (timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId) <> (MetadataIds.tupled, MetadataIds.unapply)
+  override def * = (timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId) <> (MetadataIdsObj.tupled, MetadataIdsObj.unapply)
 
   def parameters = foreignKey("PARAMETER_ID_FK", parameterId, ParametersDAO)(_.parameterId, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
 
@@ -43,12 +46,31 @@ class TimeSeriesMetadataTable(tag: Tag) extends Table[MetadataIds](tag, "TIME_SE
 
 object TimeSeriesMetadataDAO extends TableQuery(new TimeSeriesMetadataTable(_)) with DBComponent {
 
-  def findById(timeSeriesId: String): Future[Option[MetadataIds]] = {
-    db.run(this.filter(_.timeSeriesId === timeSeriesId).result).map(_.headOption)
+  def findById(timeseriesId: String): Future[Option[MetadataIdsObj]] = {
+    db.run(this.filter(_.timeSeriesId === timeseriesId).result).map(_.headOption)
   }
 
-  def create(timeSeriesMetadata: MetadataIds): Future[Int] = {
+  def find(timeSeriesId: String, moduleId: String, valueType: String, parameterId: String, locationId: String, timeSeriesType: String, timeStepId: String): Future[Seq[MetadataIdsObj]] = {
+    val q1 = if (timeSeriesId.isEmpty) this else this.filter(_.timeSeriesId === timeSeriesId)
+    val q2 = if (moduleId.isEmpty) q1 else q1.filter(_.moduleId === moduleId)
+    val q3 = if (valueType.isEmpty) q2 else q2.filter(_.valueType.asInstanceOf[Rep[String]] === valueType)
+    val q4 = if (parameterId.isEmpty) q3 else q3.filter(_.parameterId === parameterId)
+    val q5 = if (locationId.isEmpty) q4 else q4.filter(_.locationId === locationId)
+    val q6 = if (timeSeriesType.isEmpty) q5 else q5.filter(_.timeSeriesType.asInstanceOf[Rep[String]] === timeSeriesType)
+    val q7 = if (timeStepId.isEmpty) q6 else q6.filter(_.timeStepId === timeStepId)
+    val action = q7.result
+    db.run(action)
+  }
+
+  def create(metadataIdsObj: MetadataIdsObj): Future[Int] = {
     val tables = List(TimeSeriesMetadataDAO)
+
+    val timeseriesHash = TimeseriesHash(metadataIdsObj.moduleId, metadataIdsObj.valueType.toString, metadataIdsObj.parameterId, metadataIdsObj.locationId, metadataIdsObj.timeSeriesType.toString, metadataIdsObj.timeStepId)
+
+    val timeseriesId = MessageDigest.getInstance("SHA-256")
+      .digest(timeseriesHash.toString.getBytes("UTF-8"))
+      .map("%02x".format(_)).mkString
+    val metadataIdsObj2 = metadataIdsObj.copy(timeseriesId = timeseriesId)
 
     val existing = db.run(MTable.getTables)
     val f = existing.flatMap(v => {
@@ -60,7 +82,7 @@ object TimeSeriesMetadataDAO extends TableQuery(new TimeSeriesMetadataTable(_)) 
     Await.result(f, Duration.Inf)
 
     // db.run(this returning this.map(_.id) into ((acc, id) => acc.copy(id = id)) += location)
-    db.run(this += timeSeriesMetadata)
+    db.run(this += metadataIdsObj2)
   }
 
   def deleteById(timeSeriesId: String): Future[Int] = {

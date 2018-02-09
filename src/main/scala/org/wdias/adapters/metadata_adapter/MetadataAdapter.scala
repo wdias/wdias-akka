@@ -54,11 +54,11 @@ object MetadataAdapter {
   // Timeseries
   case class GetTimeseriesById(timeseriesId: String)
 
-  case class GetTimeseries(timeseriesId: String = "", moduleId: String = "", valueType: String = "", parameter: Parameter, location: Location, timeSeriesType: String, timeStep: TimeStep, tags: Array[String])
+  case class GetTimeseries(timeseriesId: String = "", moduleId: String = "", valueType: String = "", parameterId: String, locationId: String, timeSeriesType: String, timeStepId: String)
 
-  case class CreateTimeseries(metaData: Metadata)
+  case class CreateTimeseries(metadataObj: MetadataObj)
 
-  case class CreateTimeseriesWithIds(metadataIds: MetadataIds)
+  case class CreateTimeseriesWithIds(metadataIdsObj: MetadataIdsObj)
 
   case class ReplaceTimeseries(timeseriesIdx: String, metadata: Metadata)
 
@@ -145,6 +145,39 @@ class MetadataAdapter extends Actor with ActorLogging {
     case DeleteTimeStepById(timeStepId) =>
       log.info("DELETE TimeStep By Id: {}", timeStepId)
       val isDeleted = TimeStepsDAO.deleteById(timeStepId)
+      pipe(isDeleted.mapTo[Int] map { result: Int =>
+        result
+      }) to sender()
+
+    // Handle Timeseries MSGs
+    case GetTimeseriesById(timeseriesId) =>
+      log.info("GET Timeseries By Id: {}", timeseriesId)
+      pipe(TimeSeriesMetadataDAO.findById(timeseriesId).mapTo[Option[MetadataIdsObj]] map { result: Option[MetadataIdsObj] =>
+        result
+      }) to sender()
+    case GetTimeseries(timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId) =>
+      log.info("GET Query Timeseries: {} {} {} {} ", timeSeriesId, moduleId, valueType, parameterId)
+      log.info("2 GET Query Timeseries: {} {} {} ", locationId, timeSeriesType, timeStepId)
+      pipe(TimeSeriesMetadataDAO.find(timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId).
+        mapTo[Seq[MetadataIdsObj]] map { result: Seq[MetadataIdsObj] =>
+        result
+      }) to sender()
+    case CreateTimeseries(m) =>
+      log.info("POST Timeseries: {}", m)
+      val metadataIdsObj = MetadataIdsObj(null, m.moduleId, m.valueType, m.parameter.parameterId, m.location.locationId, m.timeSeriesType, m.timeStep.timeStepId)
+      val isCreated = TimeSeriesMetadataDAO.create(metadataIdsObj)
+      pipe(isCreated.mapTo[Int] map { result: Int =>
+        result
+      }) to sender()
+    case CreateTimeseriesWithIds(metadataIds) =>
+      log.info("POST Timeseries: {}", metadataIds)
+      val isCreated = TimeSeriesMetadataDAO.create(metadataIds)
+      pipe(isCreated.mapTo[Int] map { result: Int =>
+        result
+      }) to sender()
+    case DeleteTimeseriesById(timeseriesId) =>
+      log.info("DELETE Timeseries By Id: {}", timeseriesId)
+      val isDeleted = TimeSeriesMetadataDAO.deleteById(timeseriesId)
       pipe(isDeleted.mapTo[Int] map { result: Int =>
         result
       }) to sender()

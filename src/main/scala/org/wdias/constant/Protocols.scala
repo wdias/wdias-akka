@@ -119,11 +119,52 @@ case class Metadata(
                    ) {
   def toMetadataObj: MetadataObj = MetadataObj(null, this.moduleId, ValueType.withName(this.valueType), this.parameter.toParameterObj, this.location, TimeSeriesType.withName(this.timeSeriesType), this.timeStep.toTimeStepObj, this.tags)
 }
-case class MetadataObj(timeSeriesId: String, moduleId: String, valueType: ValueType, parameter: ParameterObj, location: Location, timeSeriesType: TimeSeriesType, timeStep: TimeStepObj, tags: Array[String]) {
+case class MetadataObj(
+                        timeSeriesId: String,
+                        moduleId: String,
+                        valueType: ValueType,
+                        parameter: ParameterObj,
+                        location: Location,
+                        timeSeriesType: TimeSeriesType,
+                        timeStep: TimeStepObj,
+                        tags: Array[String]
+                      ) {
   def toMetadata: Metadata = Metadata(this.moduleId, this.valueType.toString, this.parameter.toParameter, this.location, this.timeSeriesType.toString, this.timeStep.toTimeStep, this.tags)
 }
 // Meta Data with Ids
-case class MetadataIds(timeSeriesId: String, moduleId: String, valueType: ValueType, parameterId: String, locationId: String, timeSeriesType: TimeSeriesType, timeStepId: String)
+case class MetadataIds(
+                        timeseriesId: Option[String] = Option(""),
+                        moduleId: String,
+                        valueType: String,
+                        parameterId: String,
+                        locationId: String,
+                        timeSeriesType: String,
+                        timeStepId: String
+                        // TODO: tags: Array[String] = Array()
+                      ) {
+  def toMetadataIdsObj: MetadataIdsObj = MetadataIdsObj(null, this.moduleId, ValueType.withName(this.valueType), this.parameterId, this.locationId, TimeSeriesType.withName(this.timeSeriesType), this.timeStepId)
+}
+// Meta Data with Ids
+case class MetadataIdsObj(
+                           timeseriesId: String = "",
+                           moduleId: String,
+                           valueType: ValueType,
+                           parameterId: String,
+                           locationId: String,
+                           timeSeriesType: TimeSeriesType,
+                           timeStepId: String
+                           // TODO: tags: Array[String] = Array()
+                        ) {
+  def toMetadataIds: MetadataIds = MetadataIds(Option(this.timeseriesId), this.moduleId, this.valueType.toString, this.parameterId, this.locationId, this.timeSeriesType.toString, this.timeStepId)
+}
+case class TimeseriesHash(
+                        moduleId: String,
+                        valueType: String,
+                        parameterId: String,
+                        locationId: String,
+                        timeSeriesType: String,
+                        timeStepId: String
+                      )
 
 // Time Series Data Points
 case class DataPoint(time: String, value: Double)
@@ -146,7 +187,8 @@ trait Protocols extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val stationFormat: RootJsonFormat[Station] = jsonFormat3(Station.apply)
   implicit val locationFormat: RootJsonFormat[Location] = jsonFormat6(Location.apply)
   implicit val timeStepFormat: RootJsonFormat[TimeStep] = jsonFormat4(TimeStep.apply)
-  implicit val metaDataFormat: RootJsonFormat[Metadata] = jsonFormat7(Metadata.apply)
+  implicit val metadataFormat: RootJsonFormat[Metadata] = jsonFormat7(Metadata.apply)
+  implicit val metadataIdsFormat: RootJsonFormat[MetadataIds] = jsonFormat7(MetadataIds.apply)
   implicit val pointFormat: RootJsonFormat[DataPoint] = jsonFormat2(DataPoint.apply)
   implicit val timeSeriesFormat: RootJsonFormat[TimeSeries] = jsonFormat1(TimeSeries.apply)
   implicit val dataLocationFormat: RootJsonFormat[DataLocation] = jsonFormat3(DataLocation.apply)
