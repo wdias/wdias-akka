@@ -62,19 +62,22 @@ trait LocationRoutes extends Protocols {
             }
           },
           // PUT: Replace Point
-          (put & entity(as[Location])) { location: Location =>
-            logLocationRoutes.info("/location/point GET request: Query:")
-            complete(Created -> "Query")
+          (put & pathPrefix(Segment)) { locationId: String =>
+            entity(as[Location]) { location: Location =>
+            logLocationRoutes.info("/location/point GET request: Replace {} : {}", locationId, location)
+            complete(Created -> "Replace")
           },
           // PATCH: Update Point
-          (patch & entity(as[Location])) { location: Location =>
-            logLocationRoutes.info("/location/point GET request: Query:")
-            complete(Created -> "Query")
+          (patch & pathPrefix(Segment)) { locationId: String =>
+            // TODO: Read fields separately
+            entity(as[Location]) { location: Location =>
+            logLocationRoutes.info("/location/point GET request: Update {} : {}", locationId, location)
+            complete(Created -> "Update")
           },
           // DELETE: Delete Point
-          (delete & parameters('locationId)) { (locationId) =>
+          (delete & pathPrefix(Segment)) { locationId: String =>
             logLocationRoutes.info("/location/point DELETE request: > {}", locationId)
-            val response: Future[Int] = (metadataAdapterRef ? DeleteLocation(locationId)).mapTo[Int]
+            val response: Future[Int] = (metadataAdapterRef ? DeleteLocationById(locationId)).mapTo[Int]
             onSuccess(response) { isDeleted: Int =>
               complete(Created -> isDeleted.toString)
             }
