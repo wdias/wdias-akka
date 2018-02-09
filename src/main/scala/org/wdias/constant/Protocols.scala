@@ -24,7 +24,12 @@ object ParameterType extends Enumeration {
 
 import ParameterType._
 
-case class Parameter(parameterId: String, variable: String, unit: String, parameterType: String) {
+case class Parameter(
+                      parameterId: String,
+                      variable: String,
+                      unit: String,
+                      parameterType: String
+                    ) {
   def toParameterObj: ParameterObj = ParameterObj(this.parameterId, this.variable, this.unit, ParameterType.withName(this.parameterType))
 }
 case class ParameterObj(parameterId: String, variable: String, unit: String, parameterType: ParameterType) {
@@ -51,7 +56,14 @@ object ParameterJsonProtocol extends DefaultJsonProtocol {
 // 4. Location
 case class Station(name: String, latitude: Double, longitude: Double)
 // TODO: Set locationId optional
-case class Location(locationId: String, name: String, lat: Float, lon: Float, elevation: Option[Float] = Option(0), description: Option[String] = Option(""))
+case class Location(
+                     locationId: String,
+                     name: String,
+                     lat: Float,
+                     lon: Float,
+                     elevation: Option[Float] = Option(0),
+                     description: Option[String] = Option("")
+                   )
 // 5. TimeSeriesType
 object TimeSeriesType extends Enumeration {
   type TimeSeriesType = Value
@@ -78,20 +90,39 @@ object TimeStepUnit extends Enumeration {
 
 import TimeStepUnit._
 
-case class TimeStep(timeStepId: String, unit: String, multiplier: Option[Int] = Option(0), divider: Option[Int] = Option(0)) {
+case class TimeStep(
+                     timeStepId: String,
+                     unit: String,
+                     multiplier: Option[Int] = Option(0),
+                     divider: Option[Int] = Option(0)
+                   ) {
   def toTimeStepObj: TimeStepObj = TimeStepObj(this.timeStepId, TimeStepUnit.withName(this.unit), this.multiplier, this.divider)
 }
-case class TimeStepObj(timeStepId: String, unit: TimeStepUnit, multiplier: Option[Int] = Option(0), divider: Option[Int] = Option(0)) {
+case class TimeStepObj(
+                        timeStepId: String,
+                        unit: TimeStepUnit,
+                        multiplier: Option[Int] = Option(0),
+                        divider: Option[Int] = Option(0)
+                      ) {
   def toTimeStep: TimeStep = TimeStep(this.timeStepId, this.unit.toString, this.multiplier, this.divider)
 }
 
 // Meta Data definition
-case class MetaData(moduleId: String, valueType: String, parameter: Parameter, location: Location, timeSeriesType: String, timeStep: TimeStep, tags: Array[String]) {
+case class MetaData(
+                     moduleId: String,
+                     valueType: String,
+                     parameter: Parameter,
+                     location: Location,
+                     timeSeriesType: String,
+                     timeStep: TimeStep,
+                     tags: Array[String]
+                   ) {
   def toMetadataObj: MetadataObj = MetadataObj(null, this.moduleId, ValueType.withName(this.valueType), this.parameter.toParameterObj, this.location, TimeSeriesType.withName(this.timeSeriesType), this.timeStep.toTimeStepObj, this.tags)
 }
 case class MetadataObj(timeSeriesId: String, moduleId: String, valueType: ValueType, parameter: ParameterObj, location: Location, timeSeriesType: TimeSeriesType, timeStep: TimeStepObj, tags: Array[String]) {
   def toMetadata: MetaData = MetaData(this.moduleId, this.valueType.toString, this.parameter.toParameter, this.location, this.timeSeriesType.toString, this.timeStep.toTimeStep, this.tags)
 }
+// Meta Data with Ids
 case class MetadataIds(timeSeriesId: String, moduleId: String, valueType: ValueType, parameterId: String, locationId: String, timeSeriesType: TimeSeriesType, timeStepId: String)
 
 // Time Series Data Points

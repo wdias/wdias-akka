@@ -11,10 +11,37 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object MetadataAdapter {
+  // Location Point
   case class GetLocationById(locationId: String)
   case class GetLocations(locationId: String = "", name: String = "")
   case class CreateLocation(location: Location)
+  case class ReplaceLocation(locationIdx: String, location: Location)
+  case class UpdateLocation(locationIdx: String, locationId:String = "", variable: String="", unit: String="", parameterType: String="")
   case class DeleteLocation(locationId: String)
+  // Parameter
+  case class GetParameterById(parameterId: String)
+  case class GetParameters(parameterId:String = "", variable: String="", unit: String="", parameterType: String="")
+  case class CreateParameter(parameter: Parameter)
+  case class ReplaceParameter(parameterIdx: String, parameter: Parameter)
+  case class UpdateParameters(parameterIdx: String, parameterId:String = "", variable: String="", unit: String="", parameterType: String="")
+  case class DeleteParameterById(parameterId: String)
+  // TimeStep
+  case class GetTimeStepById(timeStepId: String)
+  case class GetTimeSteps(timeStepId:String = "", unit: String="", multiplier: Int=0, divider: Int=0)
+  case class CreateTimeStep(timeStep: TimeStep)
+  case class ReplaceTimeStep(timeStepIdx: String, timeStep: TimeStep)
+  case class UpdateTimeSteps(timeStepIdx: String, timeStepId:String = "", unit: String="", multiplier: Int=0, divider: Int=0)
+  case class DeleteTimeStepById(timeStepId: String)
+  // Timeseries
+  case class GetTimeseriesById(timeseriesId: String)
+  case class GetTimeseries(timeseriesId:String = "", moduleId: String="", valueType: String="", parameter: Parameter, location: Location, timeSeriesType: String, timeStep: TimeStep, tags: Array[String])
+  case class CreateTimeseries(metaData: MetaData)
+  case class CreateTimeseriesWithIds(metadataIds: MetadataIds)
+  case class ReplaceTimeseries(timeseriesIdx: String, metadata: MetaData)
+  case class ReplaceTimeseriesWithIds(timeseriesIdx: String, metadataIds: MetadataIds)
+  case class UpdateTimeseries(timeseriesIdx: String, moduleId: String, valueType: String, parameter: Parameter, location: Location, timeSeriesType: String, timeStep: TimeStep, tags: Array[String])
+  case class UpdateTimeseriesWithIds(timeseriesIdx: String, moduleId: String, valueType: String, parameterId: String, locationId: String, timeSeriesType: String, timeStepId: String, tags: Array[String])
+  case class DeleteTimeseriesById(timeseriesId: String)
 }
 
 class MetadataAdapter extends Actor with ActorLogging {

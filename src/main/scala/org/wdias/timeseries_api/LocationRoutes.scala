@@ -4,14 +4,14 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.event.Logging
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{PathMatcher, Route}
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.MethodDirectives.post
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import org.wdias.adapters.metadata_adapter.MetadataAdapter._
-import org.wdias.constant.{MetaData, Protocols, _}
+import org.wdias.constant.{Protocols, _}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
