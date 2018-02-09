@@ -35,6 +35,15 @@ object ParametersDAO extends TableQuery(new Parameters(_)) with DBComponent {
     db.run(this.filter(_.parameterId === parameterId).result).map(_.headOption)
   }
 
+  def find(parameterId: String, variable: String, unit: String, parameterType: String): Future[Seq[ParameterObj]] = {
+    val q1 = if(parameterId.isEmpty) this else this.filter(_.parameterId === parameterId)
+    val q2 = if(variable.isEmpty) q1 else q1.filter(_.variable === variable)
+    val q3 = if(unit.isEmpty) q2 else q2.filter(_.unit === unit)
+    val q4 = if(parameterType.isEmpty) q3 else q3.filter(_.parameterType.asInstanceOf[Rep[String]] === parameterType)
+    val action = q4.result
+    db.run(action)
+  }
+
   def create(parameter: ParameterObj): Future[Int] = {
     val tables = List(ParametersDAO)
 

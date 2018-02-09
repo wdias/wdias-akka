@@ -64,15 +64,17 @@ trait LocationRoutes extends Protocols {
           // PUT: Replace Point
           (put & pathPrefix(Segment)) { locationId: String =>
             entity(as[Location]) { location: Location =>
-            logLocationRoutes.info("/location/point GET request: Replace {} : {}", locationId, location)
-            complete(Created -> "Replace")
+              logLocationRoutes.info("/location/point GET request: Replace {} : {}", locationId, location)
+              complete(Created -> "Replace")
+            }
           },
           // PATCH: Update Point
           (patch & pathPrefix(Segment)) { locationId: String =>
             // TODO: Read fields separately
             entity(as[Location]) { location: Location =>
-            logLocationRoutes.info("/location/point GET request: Update {} : {}", locationId, location)
-            complete(Created -> "Update")
+              logLocationRoutes.info("/location/point GET request: Update {} : {}", locationId, location)
+              complete(Created -> "Update")
+            }
           },
           // DELETE: Delete Point
           (delete & pathPrefix(Segment)) { locationId: String =>

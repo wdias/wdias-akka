@@ -30,7 +30,7 @@ object MetadataAdapter {
 
   case class GetParameters(parameterId: String = "", variable: String = "", unit: String = "", parameterType: String = "")
 
-  case class CreateParameter(parameter: Parameter)
+  case class CreateParameter(parameterObj: ParameterObj)
 
   case class ReplaceParameter(parameterIdx: String, parameter: Parameter)
 
@@ -97,6 +97,30 @@ class MetadataAdapter extends Actor with ActorLogging {
     case DeleteLocationById(locationId) =>
       log.info("DELETE Location By Id: {}", locationId)
       val isDeleted = LocationsDAO.deleteById(locationId)
+      pipe(isDeleted.mapTo[Int] map { result: Int =>
+        result
+      }) to sender()
+
+    // Handle Parameter MSGs
+    case GetParameterById(parameterId) =>
+      log.info("GET Parameter By Id: {}", parameterId)
+      pipe(ParametersDAO.findById(parameterId).mapTo[Option[ParameterObj]] map { result: Option[ParameterObj] =>
+        result
+      }) to sender()
+    case GetParameters(parameterId, variable, unit, parameterType) =>
+      log.info("GET Query Parameters: {} {} {} {}", parameterId, variable, unit, parameterType)
+      pipe(ParametersDAO.find(parameterId, variable, unit, parameterType).mapTo[Seq[ParameterObj]] map { result: Seq[ParameterObj] =>
+        result
+      }) to sender()
+    case CreateParameter(parameterObj) =>
+      log.info("POST Parameter: {}", parameterObj)
+      val isCreated = ParametersDAO.create(parameterObj)
+      pipe(isCreated.mapTo[Int] map { result: Int =>
+        result
+      }) to sender()
+    case DeleteParameterById(parameterId) =>
+      log.info("DELETE Parameter By Id: {}", parameterId)
+      val isDeleted = ParametersDAO.deleteById(parameterId)
       pipe(isDeleted.mapTo[Int] map { result: Int =>
         result
       }) to sender()

@@ -12,69 +12,75 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import org.wdias.adapters.metadata_adapter.MetadataAdapter._
 import org.wdias.constant.{Protocols, _}
+import thredds.catalog.ThreddsMetadata.Variable
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-// Location REST API Routes class
-trait ParamterRoutes extends Protocols {
+// Parameter REST API Routes class
+trait ParameterRoutes extends Protocols {
   // abstract system value will be provide by app
   implicit def system: ActorSystem
   implicit def materializer: ActorMaterializer
 
   // logging for InputRoutes
-  lazy val logParameterRoutes = Logging(system, classOf[ParamterRoutes])
+  lazy val logParameterRoutes = Logging(system, classOf[ParameterRoutes])
 
-  // Actor dependencies required for LocationRoutes
+  // Actor dependencies required for ParameterRoutes
   def metadataAdapterRef: ActorRef
 
   // Required by the `ask` (?) method below
-  implicit lazy val timeoutLocationRoutes: Timeout = Timeout(15.seconds) // TODO: Obtain from config
+  implicit lazy val timeoutParameterRoutes: Timeout = Timeout(15.seconds) // TODO: Obtain from config
 
   // --- All Input Routes ---
-  lazy val locationRoutes: Route = {
+  lazy val parameterRoutes: Route = {
     concat(
       pathPrefix("parameter") {
         concat(
-          // GET: Get Point
+          // GET: Get Parameter
           (get & pathPrefix(Segment)) { parameterId: String =>
             logParameterRoutes.info("/parameter GET request: > {}", parameterId)
-            val response = (metadataAdapterRef ? GetLocationById(parameterId)).mapTo[Option[Location]]
-            onSuccess(response) { location =>
-              complete(Created -> location)
+            val response = (metadataAdapterRef ? GetParameterById(parameterId)).mapTo[Option[ParameterObj]]
+            onSuccess(response) { parameterObj: Option[ParameterObj] =>
+              complete(Created -> parameterObj.getOrElse(ParameterObj("","","",ParameterType.Instantaneous)).toParameter)
             }
           },
-          // GET: Query on Points
-          (get & pathEnd & parameters('parameterId.as[String].?, 'name.as[String].?)) { (parameterId, name) =>
+          // GET: Query on Parameters
+          (get & pathEnd & parameters('parameterId.as[String].?, 'variable.as[String].?, 'unit.as[String].?, 'parameterType.as[String].?)) { (parameterId, variable, unit, parameterType) =>
             logParameterRoutes.info("/parameter GET request: List")
-            val response: Future[Seq[Location]] = (metadataAdapterRef ? GetLocations(parameterId.getOrElse(""), name.getOrElse(""))).mapTo[Seq[Location]]
-            onSuccess(response) { locations: Seq[Location] =>
-              complete(Created -> locations)
+            val response: Future[Seq[ParameterObj]] = (metadataAdapterRef ? GetParameters(parameterId.getOrElse(""), variable.getOrElse(""), unit.getOrElse(""), parameterType.getOrElse(""))).mapTo[Seq[ParameterObj]]
+            onSuccess(response) { parameterObjs: Seq[ParameterObj] =>
+              complete(Created -> parameterObjs.map(_.toParameter))
             }
           },
 
-          // POST: Create Point
-          (post & entity(as[Location])) { location: Location =>
-            logParameterRoutes.info("/parameter POST request: > {}", location)
-            val response: Future[Location] = (metadataAdapterRef ? CreateLocation(location)).mapTo[Location]
-            onSuccess(response) { location: Location =>
-              complete(Created -> location)
+          // POST: Create Parameter
+          (post & entity(as[Parameter])) { parameter: Parameter =>
+            logParameterRoutes.info("/parameter POST request: > {}", parameter)
+            val response: Future[Int] = (metadataAdapterRef ? CreateParameter(parameter.toParameterObj)).mapTo[Int]
+            onSuccess(response) { isCreated: Int =>
+              complete(Created -> isCreated.toString)
             }
           },
-          // PUT: Replace Point
-          (put & entity(as[Location])) { location: Location =>
-            logParameterRoutes.info("/parameter GET request: Query:")
-            complete(Created -> "Query")
+          // PUT: Replace Parameter
+          (put & pathPrefix(Segment)) { parameterId: String =>
+            entity(as[Parameter]) { parameter: Parameter =>
+              logParameterRoutes.info("/parameter/point GET request: Replace {} : {}", parameterId, parameter)
+              complete(Created -> "Replace")
+            }
           },
-          // PATCH: Update Point
-          (patch & entity(as[Location])) { location: Location =>
-            logParameterRoutes.info("/parameter GET request: Query:")
-            complete(Created -> "Query")
+          // PATCH: Update Parameter
+          (patch & pathPrefix(Segment)) { parameterId: String =>
+            // TODO: Read fields separately
+            entity(as[Parameter]) { parameter: Parameter =>
+              logParameterRoutes.info("/parameter/point GET request: Update {} : {}", parameterId, parameter)
+              complete(Created -> "Update")
+            }
           },
-          // DELETE: Delete Point
-          (delete & parameters('parameterId)) { (parameterId) =>
-            logParameterRoutes.info("/parameter DELETE request: > {}", parameterId)
-            val response: Future[Int] = (metadataAdapterRef ? DeleteLocation(parameterId)).mapTo[Int]
+          // DELETE: Delete Parameter
+          (delete & pathPrefix(Segment)) { parameterId: String =>
+            logParameterRoutes.info("/parameter/point DELETE request: > {}", parameterId)
+            val response: Future[Int] = (metadataAdapterRef ? DeleteParameterById(parameterId)).mapTo[Int]
             onSuccess(response) { isDeleted: Int =>
               complete(Created -> isDeleted.toString)
             }
