@@ -35,6 +35,15 @@ object TimeStepsDAO extends TableQuery(new TimeSteps(_)) with DBComponent {
     db.run(this.filter(_.timeStepId === timeStepId).result).map(_.headOption)
   }
 
+  def find(timeStepId: String, unit:String, multiplier:Int, divider:Int): Future[Seq[TimeStepObj]] = {
+    val q1 = if(timeStepId.isEmpty) this else this.filter(_.timeStepId === timeStepId)
+    val q2 = if(unit.isEmpty) q1 else q1.filter(_.unit.asInstanceOf[Rep[String]] === unit)
+    val q3 = if(multiplier == 0) q2 else q2.filter(_.multiplier === multiplier)
+    val q4 = if(divider == 0) q3 else q3.filter(_.divider === divider)
+    val action = q4.result
+    db.run(action)
+  }
+
   def create(timeStep: TimeStepObj): Future[Int] = {
     val tables = List(TimeStepsDAO)
 

@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 
 // REST API Routes class
-trait TimeseriesAPIRoutes extends LocationRoutes with ParameterRoutes {
+trait TimeseriesAPIRoutes extends LocationRoutes with ParameterRoutes with TimeStepRoutes {
   // abstract system value will be provide by app
   implicit def system: ActorSystem
   implicit def materializer: ActorMaterializer
@@ -19,7 +19,8 @@ trait TimeseriesAPIRoutes extends LocationRoutes with ParameterRoutes {
   lazy val timeseriesAPIRoutes: Route = {
     concat(
       locationRoutes,
-      parameterRoutes
+      parameterRoutes,
+      timeStepRoutes
     )
   }
 }

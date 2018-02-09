@@ -43,7 +43,7 @@ object MetadataAdapter {
 
   case class GetTimeSteps(timeStepId: String = "", unit: String = "", multiplier: Int = 0, divider: Int = 0)
 
-  case class CreateTimeStep(timeStep: TimeStep)
+  case class CreateTimeStep(timeStepObj: TimeStepObj)
 
   case class ReplaceTimeStep(timeStepIdx: String, timeStep: TimeStep)
 
@@ -121,6 +121,30 @@ class MetadataAdapter extends Actor with ActorLogging {
     case DeleteParameterById(parameterId) =>
       log.info("DELETE Parameter By Id: {}", parameterId)
       val isDeleted = ParametersDAO.deleteById(parameterId)
+      pipe(isDeleted.mapTo[Int] map { result: Int =>
+        result
+      }) to sender()
+
+    // Handle TimeStep MSGs
+    case GetTimeStepById(timeStepId) =>
+      log.info("GET TimeStep By Id: {}", timeStepId)
+      pipe(TimeStepsDAO.findById(timeStepId).mapTo[Option[TimeStepObj]] map { result: Option[TimeStepObj] =>
+        result
+      }) to sender()
+    case GetTimeSteps(timeStepId, unit, multiplier, divider) =>
+      log.info("GET Query TimeSteps: {} {} {} {}", timeStepId, unit, multiplier, divider)
+      pipe(TimeStepsDAO.find(timeStepId, unit, multiplier, divider).mapTo[Seq[TimeStepObj]] map { result: Seq[TimeStepObj] =>
+        result
+      }) to sender()
+    case CreateTimeStep(timeStepObj) =>
+      log.info("POST TimeStep: {}", timeStepObj)
+      val isCreated = TimeStepsDAO.create(timeStepObj)
+      pipe(isCreated.mapTo[Int] map { result: Int =>
+        result
+      }) to sender()
+    case DeleteTimeStepById(timeStepId) =>
+      log.info("DELETE TimeStep By Id: {}", timeStepId)
+      val isDeleted = TimeStepsDAO.deleteById(timeStepId)
       pipe(isDeleted.mapTo[Int] map { result: Int =>
         result
       }) to sender()
