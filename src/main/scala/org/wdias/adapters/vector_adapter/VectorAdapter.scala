@@ -26,9 +26,9 @@ object VectorAdapter {
   case class StoreTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
   case class StoreValidatedTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
 
-  case class GetTimeSeries(metaData: MetaData)
+  case class GetTimeSeries(metaData: Metadata)
 
-  case class StoreSuccess(metadata: MetaData)
+  case class StoreSuccess(metadata: Metadata)
 
   case class Result(timeSeriesEnvelop: TimeSeriesEnvelop)
 
@@ -43,7 +43,7 @@ class ScalarAdapter extends Actor with ActorLogging {
   var extensionHandlerRef: ActorRef = _
   context.actorSelection("/user/extensionHandler") ! Identify(None)
 
-  def createResponse(metaData: MetaData, result: QueryResult): TimeSeriesEnvelop = {
+  def createResponse(metaData: Metadata, result: QueryResult): TimeSeriesEnvelop = {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
     var points: List[DataPoint] = List()
@@ -120,7 +120,7 @@ class ScalarAdapter extends Actor with ActorLogging {
       log.info("StoringTimeSeries... {}", sender())
       val influxdb = InfluxDB.connect("localhost", 8086)
       val database = influxdb.selectDatabase("wdias")
-      val metaData: MetaData = data.metaData
+      val metaData: Metadata = data.metaData
       var points: List[Point] = List()
       val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
       val zoneId = ZoneId.systemDefault

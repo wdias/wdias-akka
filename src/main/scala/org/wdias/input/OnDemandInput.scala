@@ -66,7 +66,7 @@ trait Service extends Protocols {
   def storeObservedData(data: TimeSeriesEnvelop): Future[Boolean] = {
     val influxdb = InfluxDB.connect("localhost", 8086)
     val database = influxdb.selectDatabase("curw")
-    val metaData: MetaData = data.metaData
+    val metaData: Metadata = data.metaData
     var points: List[Point] = List()
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     val zoneId = ZoneId.systemDefault
@@ -124,7 +124,7 @@ trait Service extends Protocols {
 
     val influxdb = InfluxDB.connect("localhost", 8086)
     val database = influxdb.selectDatabase("curw")
-    val metaData: MetaData = fetchInfo.metaData
+    val metaData: Metadata = fetchInfo.metaData
     var points: List[Point] = List()
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     val zoneId = ZoneId.systemDefault

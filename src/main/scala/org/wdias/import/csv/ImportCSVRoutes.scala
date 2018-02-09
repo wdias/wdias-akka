@@ -19,7 +19,7 @@ import akka.util.{ByteString, Timeout}
 import org.wdias.`import`.csv.ImportCSV.ImportCSVFile
 import org.wdias.`import`.json.ImportJSON.ImportJSONData
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreSuccess
-import org.wdias.constant.{MetaData, Protocols, TimeSeriesEnvelop}
+import org.wdias.constant.{Metadata, Protocols, TimeSeriesEnvelop}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -53,7 +53,7 @@ trait ImportCSVRoutes extends Protocols {
         }
       },
       path("import" / "csv" / "file") {
-        formField('metaData.as[MetaData]) { metaData =>
+        formField('metaData.as[Metadata]) { metaData =>
           fileUpload("csv") {
             case (_, byteSource) =>
               val splitLines = Framing.delimiter(ByteString("\n"), 1024, allowTruncation = true)

@@ -11,7 +11,7 @@ import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.Result
-import org.wdias.constant.{MetaData, Protocols}
+import org.wdias.constant.{Metadata, Protocols}
 import org.wdias.export.json.ExportJSON.ExportJSONData
 
 import scala.concurrent.Future
@@ -37,7 +37,7 @@ trait ExportCSVRoutes extends Protocols {
   lazy val exportCSVRoutes: Route = {
     concat(
       path("export" / "csv" / "raw") {
-        (post & entity(as[MetaData])) { metaData: MetaData =>
+        (post & entity(as[Metadata])) { metaData: Metadata =>
           logExportCSVRoutes.info("/export GET request: > {}", metaData)
           val response: Future[Result] = (exportJSONRef ? ExportJSONData(metaData)).mapTo[Result]
           onSuccess(response) { result =>

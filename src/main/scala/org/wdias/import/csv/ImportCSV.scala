@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 object ImportCSV {
 
-  case class ImportCSVFile(metaData: MetaData, source: Array[String])
+  case class ImportCSVFile(metaData: Metadata, source: Array[String])
 
 }
 

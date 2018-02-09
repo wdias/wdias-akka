@@ -3,13 +3,13 @@ package org.wdias.export.json
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.GetTimeSeries
-import org.wdias.constant.MetaData
+import org.wdias.constant.Metadata
 
 import scala.concurrent.duration._
 
 object ExportJSON {
 
-  case class ExportJSONData(metaData: MetaData)
+  case class ExportJSONData(metaData: Metadata)
 
 }
 
