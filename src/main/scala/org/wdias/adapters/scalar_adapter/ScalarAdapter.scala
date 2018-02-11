@@ -47,14 +47,16 @@ class ScalarAdapter extends Actor with ActorLogging {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
     var points: List[DataPoint] = List()
-    val valueIndex = result.series.head.columns.indexOf("value")
-    val records: List[Record] = result.series.head.records
-    records.foreach { record =>
-      log.info(record.allValues.toString())
-      val dateTimeStr: String = record.allValues(0).toString.split('Z')(0)
-      val dateTime = LocalDateTime.parse(dateTimeStr)
-      val value: Double = record.allValues(valueIndex).toString.toDouble
-      points = points :+ DataPoint(dateTime.format(formatter), value)
+    if(result.series.nonEmpty) {
+      val records: List[Record] = result.series.head.records
+      val valueIndex = result.series.head.columns.indexOf("value")
+      records.foreach { record =>
+        log.info(record.allValues.toString())
+        val dateTimeStr: String = record.allValues(0).toString.split('Z')(0)
+        val dateTime = LocalDateTime.parse(dateTimeStr)
+        val value: Double = record.allValues(valueIndex).toString.toDouble
+        points = points :+ DataPoint(dateTime.format(formatter), value)
+      }
     }
     val timeSeries = Some(TimeSeries(points))
     println("Created Response TimeSeries")
