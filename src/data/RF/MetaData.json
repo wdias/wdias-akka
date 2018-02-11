@@ -1,15 +1,23 @@
 {
-  "type": "Observed",
-  "station": {
-    "name": "Hanwella",
-    "latitude": 6.909722222,
-    "longitude": 80.08166667
+  "moduleId": "HEC-HMS",
+  "valueType": "Scalar",
+  "parameter": {
+    "parameterId": "O.Precipitation",
+    "variable": "Precipitation",
+    "unit": "mm",
+    "parameterType": "Instantaneous"
   },
-  "source": "HEC-HMS",
-  "unit": {
-    "unit": "m3/s",
-    "type": "Instantaneous"
+  "location": {
+    "locationId": "wdias_waga",
+    "name": "Waga",
+    "lat": 6.909722222,
+    "lon": 80.08166667
   },
-  "variable": "Precipitation",
+  "timeSeriesType": "External Historical",
+  "timeStep": {
+    "timeStepId": "each_hour",
+    "unit": "Hour",
+    "multiplier": 1
+  },
   "tags": ["Test1"]
 }

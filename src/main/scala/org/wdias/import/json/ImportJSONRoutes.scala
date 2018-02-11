@@ -52,9 +52,9 @@ trait ImportJSONRoutes extends Protocols {
           }
         }
       },
-      path("import" / "json" / "file") {
-        formField('metaData.as[Metadata]) { metaData =>
-          fileUpload("csv") {
+      path("import" / "json" / "upload") {
+        formField('metadata.as[Metadata]) { metaData =>
+          fileUpload("json") {
             case (_, byteSource) =>
               val splitLines = Framing.delimiter(ByteString("\n"), 1024, allowTruncation = true)
               var lines: Array[String] = Array()
@@ -74,7 +74,7 @@ trait ImportJSONRoutes extends Protocols {
           }
         }
       },
-      (post & path("import" / "json" / "file_test")) {
+      (post & path("import" / "json" / "binary")) {
         withoutSizeLimit {
           extractDataBytes { bytes =>
             val finishedWriting = bytes.runWith(FileIO.toPath(new File("/Users/gihan/example.mp4").toPath))

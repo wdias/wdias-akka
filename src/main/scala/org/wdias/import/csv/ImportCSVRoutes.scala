@@ -52,8 +52,8 @@ trait ImportCSVRoutes extends Protocols {
           }
         }
       },
-      path("import" / "csv" / "file") {
-        formField('metaData.as[Metadata]) { metaData =>
+      path("import" / "csv" / "upload") {
+        formField('metadata.as[Metadata]) { metaData =>
           fileUpload("csv") {
             case (_, byteSource) =>
               val splitLines = Framing.delimiter(ByteString("\n"), 1024, allowTruncation = true)
@@ -74,7 +74,7 @@ trait ImportCSVRoutes extends Protocols {
           }
         }
       },
-      (post & path("import" / "csv" / "file_test")) {
+      (post & path("import" / "csv" / "binary")) {
         withoutSizeLimit {
           extractDataBytes { bytes =>
             val finishedWriting = bytes.runWith(FileIO.toPath(new File("/Users/gihan/example.mp4").toPath))
