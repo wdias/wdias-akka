@@ -22,8 +22,10 @@ class ImportCSV extends Actor with ActorLogging {
 
   implicit val timeout: Timeout = Timeout(15 seconds)
 
-  var adapterRef: ActorRef = _
+  var scalarAdapterRef: ActorRef = _
   context.actorSelection("/user/scalarAdapter") ! Identify(None)
+  var vectorAdapterRef: ActorRef = _
+  context.actorSelection("/user/vectorAdapter") ! Identify(None)
 
   def receive: Receive = {
     case ImportCSVFile(metaData, source) =>
@@ -40,11 +42,15 @@ class ImportCSV extends Actor with ActorLogging {
           points = points :+ p
         })
 
-      adapterRef forward StoreTimeSeries(TimeSeriesEnvelop(metaData, Some(TimeSeries(points)), None))
+      scalarAdapterRef forward StoreTimeSeries(TimeSeriesEnvelop(metaData, Some(TimeSeries(points)), None))
 
     case ActorIdentity(_, Some(ref)) =>
-      println("Set Adapter", ref)
-      adapterRef = ref
+      log.info("Set Actor (ImportCSV): {}", ref.path.name)
+      ref.path.name match {
+        case "scalarAdapter" => scalarAdapterRef = ref
+        case "vectorAdapter" => vectorAdapterRef = ref
+        case default => log.warning("Unknown Actor Identity in ImportCSV: {}", default)
+      }
     case ActorIdentity(_, None) =>
       context.stop(self)
   }
