@@ -28,12 +28,16 @@ class ExtensionHandler extends Actor with ActorLogging {
 
   var extensionAdapterRef: ActorRef = _
   context.actorSelection("/user/extensionAdapter") ! Identify(None)
-  var adapterRef:ActorRef = _
+  var interpolationRef: ActorRef = _
+  context.actorSelection("/user/interpolation") ! Identify(None)
+  var transformationRef: ActorRef = _
+  context.actorSelection("/user/transformation") ! Identify(None)
+  var validationRef: ActorRef = _
+  context.actorSelection("/user/validation") ! Identify(None)
 
   def receive: Receive = {
     case ExtensionHandlerData(timeSeriesEnvelop) =>
       log.info("Extension Handler Data: {}", timeSeriesEnvelop)
-      adapterRef = sender()
       // Request for validation Rules
       extensionAdapterRef ! GetValidationConfig(timeSeriesEnvelop)
 
@@ -45,18 +49,24 @@ class ExtensionHandler extends Actor with ActorLogging {
         log.info("Got Validated Timeseries (ask): {}", validatedTimeseriesEnvelop)
         validationRef ! PoisonPill
         StoreValidatedTimeSeries(validatedTimeseriesEnvelop.timeSeriesEnvelop)
-      }) to adapterRef
+      }) to interpolationRef
     // NOTE: Handle without using ASK
     // validationRef ! ValidationData(validationConfig.get, timeSeriesEnvelop)
 
     case ExtensionHandlerResult(validatedTimeseriesEnvelop) =>
       log.info("Got Validated Timeseries {}", validatedTimeseriesEnvelop)
       sender() ! PoisonPill
-      adapterRef ! StoreValidatedTimeSeries(validatedTimeseriesEnvelop)
+      extensionAdapterRef ! StoreValidatedTimeSeries(validatedTimeseriesEnvelop)
 
     case ActorIdentity(_, Some(ref)) =>
-      println("Set Extension Handler Ref::",ref, ref.path.name)
-      extensionAdapterRef = ref
+      log.info("Set Actor (ExtensionHandler): {}", ref.path.name)
+      ref.path.name match {
+        case "extensionAdapter" => extensionAdapterRef = ref
+        case "interpolation" => interpolationRef = ref
+        case "transformation" => transformationRef = ref
+        case "interpolation" => interpolationRef = ref
+        case default => log.warning("Unknown Actor Identity in ExtensionHandler: {}", default)
+      }
     case ActorIdentity(_, None) =>
       context.stop(self)
   }

@@ -1,6 +1,6 @@
 package org.wdias.extensions.interpolation
 
-import akka.actor.{Actor, ActorIdentity, ActorRef, Identify}
+import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.{StoreSuccess, StoreTimeSeries}
 
@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 import akka.pattern.{ask, pipe}
 import org.wdias.constant.TimeSeriesEnvelop
 import org.wdias.extensions.interpolation.Interpolation.InterpolationData
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Interpolation {
@@ -17,12 +18,16 @@ object Interpolation {
 
 }
 
-class Interpolation extends Actor {
+class Interpolation extends Actor with ActorLogging {
 
   implicit val timeout: Timeout = Timeout(15 seconds)
 
-  var adapterRef: ActorRef = _
-  context.actorSelection("/user/adapter") ! Identify(None)
+  var scalarAdapterRef: ActorRef = _
+  context.actorSelection("/user/scalarAdapter") ! Identify(None)
+  var vectorAdapterRef: ActorRef = _
+  context.actorSelection("/user/vectorAdapter") ! Identify(None)
+  var gridAdapterRef: ActorRef = _
+  context.actorSelection("/user/gridAdapter") ! Identify(None)
 
   def receive: Receive = {
     case InterpolationData(timeSeriesEnvelop) =>
@@ -35,11 +40,16 @@ class Interpolation extends Actor {
               println("On StoreFailure")
               senderRef ! "failed"
       }*/
-      val response: Future[StoreSuccess] = (adapterRef ? StoreTimeSeries(timeSeriesEnvelop)).mapTo[StoreSuccess]
+      val response: Future[StoreSuccess] = (scalarAdapterRef ? StoreTimeSeries(timeSeriesEnvelop)).mapTo[StoreSuccess]
       pipe(response) to senderRef
     case ActorIdentity(_, Some(ref)) =>
-      println("Set Adapter", ref)
-      adapterRef = ref
+      log.info("Set Actor (Interpolation): {}", ref.path.name)
+      ref.path.name match {
+        case "scalarAdapter" => scalarAdapterRef = ref
+        case "vectorAdapter" => vectorAdapterRef = ref
+        case "gridAdapter" => gridAdapterRef = ref
+        case default => log.warning("Unknown Actor Identity in Interpolation: {}", default)
+      }
     case ActorIdentity(_, None) =>
       context.stop(self)
   }
