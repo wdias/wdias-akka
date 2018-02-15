@@ -9,7 +9,7 @@ lazy val app = project in file(".") enablePlugins (Cinnamon)
 cinnamon in run := true
 cinnamon in test := true
 // Set the Cinnamon Agent log level
-cinnamonLogLevel := "INFO"
+// cinnamonLogLevel := "INFO"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
@@ -23,6 +23,10 @@ lazy val mysqlConnectorVersion = "5.1.36"
 lazy val netcdfVersion = "4.6.11"
 
 libraryDependencies ++= Seq(
+    // Use Coda Hale Metrics and Akka instrumentation
+    Cinnamon.library.cinnamonCHMetrics,
+    Cinnamon.library.cinnamonAkka,
+    Cinnamon.library.cinnamonCHMetricsElasticsearchReporter,
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
@@ -36,14 +40,11 @@ libraryDependencies ++= Seq(
     "com.typesafe.slick" %% "slick" % slickVersion,
     "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
     "mysql" % "mysql-connector-java" % mysqlConnectorVersion,
-    "edu.ucar" % "netcdfAll" % netcdfVersion,
-    "de.aktey.akka.visualmailbox" %% "collector" % "1.1.0",
-    // Use Coda Hale Metrics and Akka instrumentation
-    Cinnamon.library.cinnamonCHMetrics,
-    Cinnamon.library.cinnamonAkka,
-    Cinnamon.library.cinnamonCHMetricsElasticsearchReporter
+    "edu.ucar" % "netcdfAll" % netcdfVersion
 )
 
 resolvers += "Unidata Releases" at "https://artifacts.unidata.ucar.edu/repository/unidata-releases"
 
 licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
+
+connectInput in run := true
