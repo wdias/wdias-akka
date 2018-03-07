@@ -6,10 +6,11 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import org.wdias.export.ExportRoutes
+import org.wdias.extensions.ExtensionRoutes
 import org.wdias.timeseries_api.TimeseriesAPIRoutes
 
 // Input Routes class
-trait SingleRoutes extends ImportRoutes with ExportRoutes with TimeseriesAPIRoutes {
+trait SingleRoutes extends ImportRoutes with ExportRoutes with TimeseriesAPIRoutes with ExtensionRoutes {
   // abstract system value will be provide by app
   implicit def system: ActorSystem
   implicit def materializer: ActorMaterializer
@@ -22,7 +23,8 @@ trait SingleRoutes extends ImportRoutes with ExportRoutes with TimeseriesAPIRout
     concat(
       importRoutes,
       exportRoutes,
-      timeseriesAPIRoutes
+      timeseriesAPIRoutes,
+      extensionRoutes
     )
   }
 }
