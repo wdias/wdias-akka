@@ -40,8 +40,10 @@ class ScalarAdapter extends Actor with ActorLogging {
 
   implicit val timeout: Timeout = Timeout(15 seconds)
 
-  var extensionHandlerRef: ActorRef = _
-  context.actorSelection("/user/extensionHandler") ! Identify(None)
+  var metadataAdapterRef: ActorRef = _
+  context.actorSelection("/user/metadataAdapter") ! Identify(None)
+  var statusHandlerRef: ActorRef = _
+  context.actorSelection("/user/statusHandler") ! Identify(None)
 
   def createResponse(metaData: Metadata, result: QueryResult): TimeSeriesEnvelop = {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
@@ -147,8 +149,8 @@ class ScalarAdapter extends Actor with ActorLogging {
         println("Written to the DB: " + isWritten)
         if (isWritten) {
           log.info("Data written to DB Success.")
-          log.info("Send Data to Extension Handler: {}", extensionHandlerRef)
-          extensionHandlerRef ! ExtensionHandlerData(data)
+          log.info("Send Data to Extension Handler: {}", metadataAdapterRef)
+          metadataAdapterRef ! ExtensionHandlerData(data)
           StoreSuccess(metaData)
         } else {
           StoreFailure()
@@ -178,8 +180,12 @@ class ScalarAdapter extends Actor with ActorLogging {
       }) to sender()
 
     case ActorIdentity(_, Some(ref)) =>
-      log.info("Set Extension Handler Ref: {}", ref)
-      extensionHandlerRef = ref
+      log.info("Set Actor (ScalarAdapter): {}", ref.path.name)
+      ref.path.name match {
+        case "metadataAdapter" => metadataAdapterRef = ref
+        case "statusHandler" => statusHandlerRef = ref
+        case default => log.warning("Unknown Actor Identity in ScalarAdapter: {}", default)
+      }
     case ActorIdentity(_, None) =>
       context.stop(self)
     case _ =>

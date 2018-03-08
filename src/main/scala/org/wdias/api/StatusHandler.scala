@@ -1,4 +1,4 @@
-package org.wdias.`import`.json
+package org.wdias.api
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
@@ -7,36 +7,33 @@ import org.wdias.constant.TimeSeriesEnvelop
 
 import scala.concurrent.duration._
 
-object ImportJSON {
+object StatusHandler {
 
   case class ImportJSONData(timeSeriesEnvelop: TimeSeriesEnvelop)
 
 }
 
-class ImportJSON extends Actor with ActorLogging {
+class StatusHandler extends Actor with ActorLogging {
 
-  import ImportJSON._
+  import StatusHandler._
 
   implicit val timeout: Timeout = Timeout(15 seconds)
 
-  var scalarAdapterRef: ActorRef = _
-  context.actorSelection("/user/scalarAdapter") ! Identify(None)
-  var vectorAdapterRef: ActorRef = _
-  context.actorSelection("/user/vectorAdapter") ! Identify(None)
+  var metadataAdapterRef: ActorRef = _
+  context.actorSelection("/user/metadataAdapter") ! Identify(None)
 
   def receive: Receive = {
     case ImportJSONData(timeSeriesEnvelop) =>
       /*val response: Future[StoreSuccess] = (adapterRef ? StoreTimeSeries(timeSeriesEnvelop)).mapTo[StoreSuccess]
       pipe(response) to senderRef*/
-      log.debug("Forwarding ImportJSONData > ", scalarAdapterRef)
-      scalarAdapterRef forward StoreTimeSeries(timeSeriesEnvelop)
+      log.debug("Forwarding ImportJSONData > ", metadataAdapterRef)
+      metadataAdapterRef forward StoreTimeSeries(timeSeriesEnvelop)
 
     case ActorIdentity(_, Some(ref)) =>
-      log.info("Set Actor (ImportJSON): {}", ref.path.name)
+      log.info("Set Actor (StatusHandler): {}", ref.path.name)
       ref.path.name match {
-        case "scalarAdapter" => scalarAdapterRef = ref
-        case "vectorAdapter" => vectorAdapterRef = ref
-        case default => log.warning("Unknown Actor Identity in ImportJSON: {}", default)
+        case "metadataAdapter" => metadataAdapterRef = ref
+        case default => log.warning("Unknown Actor Identity in StatusHandler: {}", default)
       }
     case ActorIdentity(_, None) =>
       context.stop(self)
