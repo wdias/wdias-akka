@@ -1,18 +1,11 @@
 package org.wdias.extensions
 
-import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify, PoisonPill, Props}
+import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify, PoisonPill}
 import akka.util.Timeout
-import akka.pattern.ask
+import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreValidatedTimeSeries
 import org.wdias.constant.TimeSeriesEnvelop
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import akka.pattern.pipe
-import org.wdias.adapters.extension_adapter.ExtensionAdapter.{GetValidationConfig, ValidationConfigResult}
-import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreValidatedTimeSeries
-import org.wdias.extensions.validation.Validation
-import org.wdias.extensions.validation.Validation.ValidationData
 
 object ExtensionHandler {
   case class ExtensionHandlerData(timeSeriesEnvelop: TimeSeriesEnvelop)
@@ -36,23 +29,6 @@ class ExtensionHandler extends Actor with ActorLogging {
   context.actorSelection("/user/validation") ! Identify(None)
 
   def receive: Receive = {
-    case ExtensionHandlerData(timeSeriesEnvelop) =>
-      log.info("Extension Handler Data: {}", timeSeriesEnvelop)
-      // Request for validation Rules
-      extensionAdapterRef ! GetValidationConfig(timeSeriesEnvelop)
-
-    case ValidationConfigResult(validationConfig, timeSeriesEnvelop) =>
-      log.info("Got ValidationConfig {}", validationConfig)
-      val validationRef: ActorRef = context.actorOf(Props[Validation])
-      pipe((validationRef ? ValidationData(validationConfig.get, timeSeriesEnvelop))
-        .mapTo[ExtensionHandlerResult] map { validatedTimeseriesEnvelop =>
-        log.info("Got Validated Timeseries (ask): {}", validatedTimeseriesEnvelop)
-        validationRef ! PoisonPill
-        StoreValidatedTimeSeries(validatedTimeseriesEnvelop.timeSeriesEnvelop)
-      }) to interpolationRef
-    // NOTE: Handle without using ASK
-    // validationRef ! ValidationData(validationConfig.get, timeSeriesEnvelop)
-
     case ExtensionHandlerResult(validatedTimeseriesEnvelop) =>
       log.info("Got Validated Timeseries {}", validatedTimeseriesEnvelop)
       sender() ! PoisonPill
@@ -64,7 +40,7 @@ class ExtensionHandler extends Actor with ActorLogging {
         case "extensionAdapter" => extensionAdapterRef = ref
         case "interpolation" => interpolationRef = ref
         case "transformation" => transformationRef = ref
-        case "interpolation" => interpolationRef = ref
+        case "validation" => validationRef = ref
         case default => log.warning("Unknown Actor Identity in ExtensionHandler: {}", default)
       }
     case ActorIdentity(_, None) =>

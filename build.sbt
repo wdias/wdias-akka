@@ -21,6 +21,7 @@ lazy val logBackVersion = "1.2.3"
 lazy val slickVersion = "3.2.1"
 lazy val mysqlConnectorVersion = "5.1.36"
 lazy val netcdfVersion = "4.6.11"
+lazy val json4sVersion = "3.5.3"
 
 libraryDependencies ++= Seq(
     // Use Coda Hale Metrics and Akka instrumentation
@@ -40,7 +41,8 @@ libraryDependencies ++= Seq(
     "com.typesafe.slick" %% "slick" % slickVersion,
     "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
     "mysql" % "mysql-connector-java" % mysqlConnectorVersion,
-    "edu.ucar" % "netcdfAll" % netcdfVersion
+    "edu.ucar" % "netcdfAll" % netcdfVersion,
+    "org.json4s" %% "json4s-native" % json4sVersion
 )
 
 resolvers += "Unidata Releases" at "https://artifacts.unidata.ucar.edu/repository/unidata-releases"
