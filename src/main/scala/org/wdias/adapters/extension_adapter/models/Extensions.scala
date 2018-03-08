@@ -46,7 +46,7 @@ object ExtensionsDAO extends TableQuery(new Extensions(_)) with DBComponent {
     Await.result(f, Duration.Inf)
 
     // db.run(this returning this.map(_.id) into ((acc, id) => acc.copy(id = id)) += extension)
-    db.run(this += extension)
+    db.run(this.insertOrUpdate(extension))
   }
 
   def deleteById(extensionId: String): Future[Int] = {

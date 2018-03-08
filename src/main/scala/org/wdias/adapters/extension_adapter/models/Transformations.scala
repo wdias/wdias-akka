@@ -43,7 +43,7 @@ object TransformationsDAO extends TableQuery(new Transformations(_)) with DBComp
     Await.result(f, Duration.Inf)
 
     // db.run(this returning this.map(_.id) into ((acc, id) => acc.copy(id = id)) += extension)
-    db.run(this += transformationExtension)
+    db.run(this.insertOrUpdate(transformationExtension))
   }
 
   def deleteById(extensionId: String): Future[Int] = {

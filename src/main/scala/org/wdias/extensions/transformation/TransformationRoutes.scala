@@ -71,7 +71,7 @@ trait TransformationRoutes extends TransformationProtocols {
 
           // POST: Create Extension / Transformation
           (post & entity(as[TransformationExtension])) { transformationExtension: TransformationExtension =>
-            logTransformationRoutes.info("/extension/transformation POST request: > {}", transformationExtension)
+            logTransformationRoutes.info("/extension/transformation POST request: > {}", transformationExtension.variables)
             val response: Future[Int] = (extensionAdapterRef ? CreateExtension(transformationExtension.toExtensionObj)).mapTo[Int]
             onSuccess(response) { isCreated: Int =>
               if(isCreated > 0) {
@@ -102,9 +102,16 @@ trait TransformationRoutes extends TransformationProtocols {
           // DELETE: Delete Extension / Transformation
           (delete & pathPrefix(Segment)) { extensionId: String =>
             logTransformationRoutes.info("/extension/transformation DELETE request: > {}", extensionId)
-            val response: Future[Int] = (extensionAdapterRef ? DeleteTransformationById(extensionId)).mapTo[Int]
-            onSuccess(response) { isDeleted: Int =>
-              complete(Created -> isDeleted.toString)
+            val response: Future[Int] = (extensionAdapterRef ? DeleteExtensionById(extensionId)).mapTo[Int]
+            onSuccess(response) { isCreated: Int =>
+              if(isCreated > 0) {
+                val response2: Future[Int] = (extensionAdapterRef ? DeleteTransformationById(extensionId)).mapTo[Int]
+                onSuccess(response2) { isCreated2: Int =>
+                  complete(Created -> isCreated2.toString)
+                }
+              } else {
+                complete(Created -> isCreated.toString)
+              }
             }
           }
         )

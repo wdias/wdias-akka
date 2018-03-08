@@ -5,9 +5,9 @@ import spray.json.RootJsonFormat
 
 case class Variable(
                    variableId: String,
-                   timeseriesId: String = "",
-                   timeseries: Option[Metadata] = Option(null),
-                   timeseriesWithIds: Option[MetadataIds] = Option(null)
+                   timeSeriesId: Option[String] = Option(null),
+                   timeSeries: Option[Metadata] = Option(null),
+                   timeSeriesWithIds: Option[MetadataIds] = Option(null)
                    )
 
 case class Trigger(

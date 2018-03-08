@@ -4,8 +4,6 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.wdias.extensions._
 import spray.json.{DefaultJsonProtocol, JsValue, RootJsonFormat}
 
-case class Variables(variables: Array[Variable])
-
 object MyJsonProtocol extends SprayJsonSupport with DefaultJsonProtocol with BaseExtensionProtocols {
   import spray.json._
   implicit object MyJsonFormat extends RootJsonFormat[Array[Variable]] {
