@@ -43,6 +43,7 @@ trait TransformationRoutes extends TransformationProtocols {
             val response: Future[Option[ExtensionObj]] = (extensionAdapterRef ? GetExtensionById(extensionId)).mapTo[Option[ExtensionObj]]
             onSuccess(response) { extensionObj: Option[ExtensionObj] =>
               val extension = extensionObj.getOrElse(ExtensionObj("", "", "", "", "", "")).toExtension
+              logTransformationRoutes.info("Got Extension: {}", extension)
               val a = TransformationExtensionObj("", "[]", "[]", "[]", "{}")
               // Get Transformation
               if (extension.extensionId.isEmpty) {
@@ -50,7 +51,8 @@ trait TransformationRoutes extends TransformationProtocols {
               } else {
                 val response2: Future[Option[TransformationExtensionObj]] = (extensionAdapterRef ? GetTransformationById(extension.extensionId)).mapTo[Option[TransformationExtensionObj]]
                 onSuccess(response2) { transformationExtensionObj: Option[TransformationExtensionObj] =>
-                    complete(Created -> transformationExtensionObj.getOrElse(a).toTransformationExtension(extension))
+                  logTransformationRoutes.info("Got TransformationExtension: {}", transformationExtensionObj.getOrElse(a))
+                  complete(Created -> transformationExtensionObj.getOrElse(a).toTransformationExtension(extension))
                 }
               }
             }
@@ -61,42 +63,25 @@ trait TransformationRoutes extends TransformationProtocols {
             // Get Extension
             val response: Future[Seq[ExtensionObj]] = (extensionAdapterRef ? GetExtensions(extensionId.getOrElse(""), extension.getOrElse(""), function.getOrElse(""))).mapTo[Seq[ExtensionObj]]
             onSuccess(response) { extensionObjs: Seq[ExtensionObj] =>
-              val a = TransformationExtensionObj("", "[]", "[]", "[]", "{}")
-              val gc = extensionObjs map { extensionObj =>
-                println(extensionObj.extensionId)
-              }
-              complete(OK)
-//              extensionObj =>
-//                // Get Transformation
-//                if (extensionObj.extensionId.isEmpty) {
-//                  complete(OK -> a.toTransformationExtension(extensionObj.toExtension))
-//                } else {
-//                  val response2: Future[Option[TransformationExtensionObj]] = (extensionAdapterRef ? GetTransformationById(extensionObj.extensionId)).mapTo[Option[TransformationExtensionObj]]
-//                  onSuccess(response2) { transformationExtensionObj: Option[TransformationExtensionObj] =>
-//                    transformationExtensionObj.getOrElse(a).toTransformationExtension(extensionObj.toExtension)
-//                  }
-//                }
-//              }
-//              complete(Created -> extensionObjs flatMap { extensionObj =>
-//                // Get Transformation
-//                if (extensionObj.extensionId.isEmpty) {
-//                  complete(OK -> a.toTransformationExtension(extensionObj.toExtension))
-//                } else {
-//                  val response2: Future[Option[TransformationExtensionObj]] = (extensionAdapterRef ? GetTransformationById(extensionObj.extensionId)).mapTo[Option[TransformationExtensionObj]]
-//                  onSuccess(response2) { transformationExtensionObj: Option[TransformationExtensionObj] =>
-//                    transformationExtensionObj.getOrElse(a).toTransformationExtension(extensionObj.toExtension)
-//                  }
-//                }
-//              })
+              // TODO: Embed TransformationExtension data also.
+              // val a = TransformationExtensionObj("", "[]", "[]", "[]", "{}")
+              complete(Created -> extensionObjs.map(_.toExtension))
             }
           },
 
           // POST: Create Extension / Transformation
           (post & entity(as[TransformationExtension])) { transformationExtension: TransformationExtension =>
             logTransformationRoutes.info("/extension/transformation POST request: > {}", transformationExtension)
-            val response: Future[Int] = (extensionAdapterRef ? CreateTransformation(transformationExtension.toTransformationExtensionObj)).mapTo[Int]
+            val response: Future[Int] = (extensionAdapterRef ? CreateExtension(transformationExtension.toExtensionObj)).mapTo[Int]
             onSuccess(response) { isCreated: Int =>
-              complete(Created -> isCreated.toString)
+              if(isCreated > 0) {
+                val response2: Future[Int] = (extensionAdapterRef ? CreateTransformation(transformationExtension.toTransformationExtensionObj)).mapTo[Int]
+                onSuccess(response2) { isCreated2: Int =>
+                  complete(Created -> isCreated2.toString)
+                }
+              } else {
+                complete(Created -> isCreated.toString)
+              }
             }
           },
           // PUT: Replace Extension / Transformation

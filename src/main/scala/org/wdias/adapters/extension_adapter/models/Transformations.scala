@@ -30,7 +30,7 @@ object TransformationsDAO extends TableQuery(new Transformations(_)) with DBComp
     db.run(action)
   }
 
-  def create(transformation: TransformationExtensionObj): Future[Int] = {
+  def create(transformationExtension: TransformationExtensionObj): Future[Int] = {
     val tables = List(TransformationsDAO)
 
     val existing = db.run(MTable.getTables)
@@ -43,7 +43,7 @@ object TransformationsDAO extends TableQuery(new Transformations(_)) with DBComp
     Await.result(f, Duration.Inf)
 
     // db.run(this returning this.map(_.id) into ((acc, id) => acc.copy(id = id)) += extension)
-    db.run(this += transformation)
+    db.run(this += transformationExtension)
   }
 
   def deleteById(extensionId: String): Future[Int] = {

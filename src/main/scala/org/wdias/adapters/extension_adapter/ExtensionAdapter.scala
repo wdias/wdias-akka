@@ -4,7 +4,6 @@ import akka.util.Timeout
 import akka.actor.{Actor, ActorLogging}
 import org.wdias.adapters.extension_adapter.ExtensionAdapter._
 import org.wdias.adapters.extension_adapter.models.{ExtensionsDAO, TransformationsDAO}
-import org.wdias.adapters.metadata_adapter.models.{LocationsDAO, ParametersDAO, TimeSeriesMetadataDAO, TimeStepsDAO}
 import org.wdias.constant._
 import org.wdias.extensions.transformation.TransformationExtensionObj
 import org.wdias.extensions.ExtensionObj
@@ -12,17 +11,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object ExtensionAdapter {
-
-  case class GetValidationConfig(timeSeriesEnvelop: TimeSeriesEnvelop)
-
-  case class GetTransformationConfig(timeSeriesEnvelop: TimeSeriesEnvelop)
-
-  case class GetInterpolationConfig(timeSeriesEnvelop: TimeSeriesEnvelop)
-
-  case class ValidationConfig(name: String, minValue: Double, maxValue: Double)
-
-  case class ValidationConfigResult(option: Option[ValidationConfig], timeSeriesEnvelop: TimeSeriesEnvelop)
-
   // Extension
   case class GetExtensionById(extensionId: String)
 
@@ -51,12 +39,6 @@ class ExtensionAdapter extends Actor with ActorLogging {
 
   implicit val timeout: Timeout = Timeout(15 seconds)
 
-  var validationConfigs = Set(
-    ValidationConfig("Hanwella", 0, 120),
-    ValidationConfig("Colombo", 0, 120),
-    ValidationConfig("Waga", 0, 120),
-  )
-
   def receive: Receive = {
     // Handle Extension MSGs
     case GetExtensionById(extensionId) =>
@@ -73,7 +55,7 @@ class ExtensionAdapter extends Actor with ActorLogging {
       log.info("POST Extension: {}", extension)
       val isCreated = ExtensionsDAO.create(extension)
       pipe(isCreated.mapTo[Int] map { result: Int =>
-        if (result > 0) extension else 0
+        result
       }) to sender()
     case DeleteExtensionById(extensionId) =>
       log.info("DELETE Extension By Id: {}", extensionId)
@@ -83,9 +65,10 @@ class ExtensionAdapter extends Actor with ActorLogging {
       }) to sender()
 
     // Handle Transformation MSGs
-    case GetTransformationById(transformationExtensionId) =>
-      log.info("GET TransformationExtension By Id: {}", transformationExtensionId)
-      pipe(TransformationsDAO.findById(transformationExtensionId).mapTo[Option[TransformationExtensionObj]] map { result: Option[TransformationExtensionObj] =>
+    case GetTransformationById(extensionId) =>
+      log.info("GET TransformationExtension By Id: {}", extensionId)
+      pipe(TransformationsDAO.findById(extensionId).mapTo[Option[TransformationExtensionObj]] map { result: Option[TransformationExtensionObj] =>
+        log.info(">>>>> : {}", result)
         result
       }) to sender()
     case GetTransformations(extensionId) =>
@@ -97,7 +80,7 @@ class ExtensionAdapter extends Actor with ActorLogging {
       log.info("POST TransformationExtension: {}", transformationExtensionObj)
       val isCreated = TransformationsDAO.create(transformationExtensionObj)
       pipe(isCreated.mapTo[Int] map { result: Int =>
-        if (result > 0) transformationExtensionObj else 0
+        result
       }) to sender()
     case DeleteTransformationById(transformationExtensionId) =>
       log.info("DELETE TransformationExtension By Id: {}", transformationExtensionId)
@@ -105,16 +88,5 @@ class ExtensionAdapter extends Actor with ActorLogging {
       pipe(isDeleted.mapTo[Int] map { result: Int =>
         result
       }) to sender()
-
-
-    case GetValidationConfig(timeSeriesEnvelop) =>
-      log.info("GetValidationConfig:: {}, {}", timeSeriesEnvelop, validationConfigs.find(_.name == timeSeriesEnvelop.metaData.location.name))
-
-      sender() ! ValidationConfigResult(validationConfigs.find(_.name == timeSeriesEnvelop.metaData.location.name), timeSeriesEnvelop)
-      log.info("<<<<")
-    case GetTransformationConfig(timeSeriesEnvelop) =>
-      log.info("GetTransformationConfig: {}", timeSeriesEnvelop)
-    case GetInterpolationConfig(timeSeriesEnvelop) =>
-      log.info("GetInterpolationConfig: {}", timeSeriesEnvelop)
   }
 }

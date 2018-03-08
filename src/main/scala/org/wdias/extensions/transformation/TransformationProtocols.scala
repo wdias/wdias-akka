@@ -1,8 +1,22 @@
 package org.wdias.extensions.transformation
 
-import org.json4s.DefaultFormats
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.wdias.extensions._
-import spray.json.RootJsonFormat
+import spray.json.{DefaultJsonProtocol, JsValue, RootJsonFormat}
+
+case class Variables(variables: Array[Variable])
+
+object MyJsonProtocol extends SprayJsonSupport with DefaultJsonProtocol with BaseExtensionProtocols {
+  import spray.json._
+  implicit object MyJsonFormat extends RootJsonFormat[Array[Variable]] {
+    def write(v: Array[Variable]) = JsArray(v.map(_.toJson).toVector)
+
+    def read(value: JsValue) = value match {
+      case JsArray(elements) => elements.map(_.convertTo[Variable]).toArray[Variable]
+      case x => deserializationError("Expected Array as JsArray, but got " + x)
+    }
+  }
+}
 
 case class TransformationExtension(
                       override val extensionId: String,
@@ -12,17 +26,19 @@ case class TransformationExtension(
                       variables: Array[Variable],
                       inputVariables: Array[String],
                       outputVariables: Array[String],
-                      options: String
+                      options: JsValue
                     ) extends BaseExtension {
   def toTransformationExtensionObj: TransformationExtensionObj = {
-    import org.json4s._
-    import org.json4s.native.Serialization
-    import org.json4s.native.Serialization.write
-//    implicit val formats = Serialization.formats(ShortTypeHints(List(classOf[Variable])))
-    implicit val formats = DefaultFormats
+    import spray.json._
+    val options = this.options.toString
 
-    val variables = write(this.variables)
-    TransformationExtensionObj(this.extensionId, variables, this.inputVariables.mkString(","), this.outputVariables.mkString(","), this.options)
+    import MyJsonProtocol._
+    val variables = this.variables.toJson.toString
+
+    TransformationExtensionObj(this.extensionId, variables, this.inputVariables.mkString(","), this.outputVariables.mkString(","), options)
+  }
+  def toExtensionObj: ExtensionObj = {
+    ExtensionObj(this.extensionId, this.extension, this.function, "%s:%s".format(this.trigger.`type`, this.trigger.data.mkString(",")), this.trigger.`type`, this.trigger.data.mkString(","))
   }
 }
 
@@ -34,24 +50,24 @@ case class TransformationExtensionObj(
                                        options: String
                                      ) {
   def toTransformationExtension(e: Extension): TransformationExtension = {
-    import org.json4s._
-    import org.json4s.native.Serialization
-    import org.json4s.native.Serialization.read
-//    implicit val formats = Serialization.formats(ShortTypeHints(List(classOf[Variable])))
-    implicit val formats = DefaultFormats
+    import spray.json._
+    val options = this.options.parseJson
 
-    val variables = read(this.variables)
-    TransformationExtension(this.extensionId, e.extension, e.function, e.trigger, variables, this.inputVariables.split(","), this.outputVariables.split(","), this.options)
+    import MyJsonProtocol._
+    val variables = this.variables.parseJson.convertTo[Array[Variable]]
+
+    TransformationExtension(this.extensionId, e.extension, e.function, e.trigger, variables, this.inputVariables.split(","), this.outputVariables.split(","), options)
   }
   def toTransformationExtensionWithExtensionObj(e: ExtensionObj): TransformationExtension = {
-    import org.json4s.native.Serialization.read
-    implicit val formats = DefaultFormats
-    val variables = read(this.variables)
-    TransformationExtension(this.extensionId, e.extension, e.function, Trigger(e.triggerType, e.triggerData.split(",")), variables, this.inputVariables.split(","), this.outputVariables.split(","), this.options)
+    import spray.json._
+    val options = this.options.parseJson
+
+    import MyJsonProtocol._
+    val variables = this.variables.parseJson.convertTo[Array[Variable]]
+
+    TransformationExtension(this.extensionId, e.extension, e.function, Trigger(e.triggerType, e.triggerData.split(",")), variables, this.inputVariables.split(","), this.outputVariables.split(","), options)
   }
 }
-
-case class TransformationMeta(name: String, latitude: Double, longitude: Double)
 
 trait TransformationProtocols extends BaseExtensionProtocols {
   implicit val transformationExtensionFormat: RootJsonFormat[TransformationExtension] = jsonFormat8(TransformationExtension.apply)
