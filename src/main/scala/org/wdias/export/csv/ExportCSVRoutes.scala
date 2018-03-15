@@ -12,7 +12,6 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.Result
 import org.wdias.constant.{Metadata, Protocols}
-import org.wdias.export.json.ExportJSON.ExportJSONData
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -39,10 +38,7 @@ trait ExportCSVRoutes extends Protocols {
       path("export" / "csv" / "raw") {
         (post & entity(as[Metadata])) { metaData: Metadata =>
           logExportCSVRoutes.info("/export GET request: > {}", metaData)
-          val response: Future[Result] = (exportJSONRef ? ExportJSONData(metaData)).mapTo[Result]
-          onSuccess(response) { result =>
-            complete(Created -> result.timeSeriesEnvelop)
-          }
+            complete(Created)
         }
       }
     )

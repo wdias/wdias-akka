@@ -39,10 +39,7 @@ trait ExportJSONRoutes extends Protocols {
       path("export" / "json" / "raw") {
         (post & entity(as[Metadata])) { metaData: Metadata =>
           logExportJSONRoutes.info("/export GET request: > {}", metaData)
-          val response: Future[Result] = (exportJSONRef ? ExportJSONData(metaData)).mapTo[Result]
-          onSuccess(response) { result =>
-            complete(Created -> result.timeSeriesEnvelop)
-          }
+            complete(Created)
         }
       }
     )

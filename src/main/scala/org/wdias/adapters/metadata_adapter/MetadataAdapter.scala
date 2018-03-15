@@ -54,7 +54,7 @@ object MetadataAdapter {
   // Timeseries
   case class GetTimeseriesById(timeseriesId: String)
 
-  case class GetTimeseries(timeseriesId: String = "", moduleId: String = "", valueType: String = "", parameterId: String, locationId: String, timeSeriesType: String, timeStepId: String)
+  case class GetTimeseries(timeseriesId: Option[String] = Option(""), moduleId: Option[String] = Option(""), valueType: Option[String] = Option(""), parameterId: Option[String] = Option(""), locationId: Option[String] = Option(""), timeSeriesType: Option[String] = Option(""), timeStepId: Option[String] = Option(""))
 
   case class CreateTimeseries(metadataObj: MetadataObj)
 

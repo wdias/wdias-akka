@@ -3,7 +3,7 @@ package org.wdias.extensions.transformation
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.{StoreSuccess, StoreTimeSeries}
-import org.wdias.constant.TimeSeriesEnvelop
+import org.wdias.constant.TimeSeries
 import org.wdias.extensions.transformation.Transformation.TransformationData
 
 import scala.concurrent.Future
@@ -13,7 +13,7 @@ import akka.pattern.{ask, pipe}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Transformation {
-  case class TransformationData(timeSeriesEnvelop: TimeSeriesEnvelop)
+  case class TransformationData(timeSeriesEnvelop: TimeSeries)
 }
 
 class Transformation extends Actor with ActorLogging {

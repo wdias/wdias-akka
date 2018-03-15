@@ -4,13 +4,18 @@ import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneId}
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
+import akka.http.scaladsl.model.StatusCode
+import akka.http.scaladsl.model.StatusCodes.{Created, InternalServerError}
 import akka.pattern.pipe
 import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
+import org.wdias.adapters.scalar_adapter.ScalarAdapter.{GetTimeSeries, StoreTimeSeries, StoreTimeseriesResponse, StoreValidatedTimeSeries}
 import org.wdias.adapters.vector_adapter.VectorAdapter._
 import org.wdias.extensions.ExtensionHandler.ExtensionHandlerData
 import ucar.ma2.DataType
 import ucar.nc2.{Attribute, Dimension}
+
+import scala.concurrent.Future
 // Check to Run in Actor Context
 import java.nio.file.{Files, Paths}
 import java.util
@@ -22,15 +27,20 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object VectorAdapter {
+  case class StoreTimeSeries(timeSeries: TimeSeries)
 
-  case class StoreTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
-  case class StoreValidatedTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
+  case class GetTimeSeries(metadataObj: MetadataObj)
 
-  case class GetTimeSeries(metaData: Metadata)
+  case class StoreTimeseriesResponse(statusCode: StatusCode, metadataIds: Option[MetadataIds] = Option(null), message: Option[String] = Option(null))
+
+  case class GetTimeseriesResponse(statusCode: StatusCode, timeseries: Option[TimeSeries] = Option(null), message: Option[String] = Option(null))
+
+  // TODO: To be removed
+  case class StoreValidatedTimeSeries(timeSeriesEnvelop: TimeSeries)
 
   case class StoreSuccess(metadata: Metadata)
 
-  case class Result(timeSeriesEnvelop: TimeSeriesEnvelop)
+  case class Result(timeSeriesEnvelop: TimeSeries)
 
   case class StoreFailure()
 
@@ -45,22 +55,24 @@ class VectorAdapter extends Actor with ActorLogging {
   var statusHandlerRef: ActorRef = _
   context.actorSelection("/user/statusHandler") ! Identify(None)
 
-  def createResponse(metaData: Metadata, result: QueryResult): TimeSeriesEnvelop = {
+  def createResponse(query: MetadataObj, result: QueryResult): TimeSeries = {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
     var points: List[DataPoint] = List()
-    val valueIndex = result.series.head.columns.indexOf("value")
-    val records: List[Record] = result.series.head.records
-    records.foreach { record =>
-      log.info(record.allValues.toString())
-      val dateTimeStr: String = record.allValues(0).toString.split('Z')(0)
-      val dateTime = LocalDateTime.parse(dateTimeStr)
-      val value: Double = record.allValues(valueIndex).toString.toDouble
-      points = points :+ DataPoint(dateTime.format(formatter), value)
+    val timeSeries: TimeSeries = TimeSeries(query.timeSeriesId, query.toMetadataIds.toMetadataIdsObj)
+    if(result.series.nonEmpty) {
+      val records: List[Record] = result.series.head.records
+      val valueIndex = result.series.head.columns.indexOf("value")
+      records.foreach { record =>
+        log.info(record.allValues.toString())
+        val dateTimeStr: String = record.allValues(0).toString.split('Z')(0)
+        val dateTime = LocalDateTime.parse(dateTimeStr)
+        val value: Double = record.allValues(valueIndex).toString.toDouble
+        timeSeries.addDataPoint(DataPoint(dateTime.format(formatter)).addValue(value))
+      }
     }
-    val timeSeries = Some(TimeSeries(points))
     println("Created Response TimeSeries")
-    TimeSeriesEnvelop(metaData, timeSeries, None)
+    timeSeries
   }
 
   def createNetcdfFile(): Unit = {
@@ -118,26 +130,26 @@ class VectorAdapter extends Actor with ActorLogging {
   }
 
   def receive: Receive = {
-    case StoreTimeSeries(data) =>
+    case StoreTimeSeries(timeSeries: TimeSeries) =>
       log.info("StoringTimeSeries... {}", sender())
       val influxdb = InfluxDB.connect("localhost", 8086)
       val database = influxdb.selectDatabase("wdias")
-      val metaData: Metadata = data.metaData
+      val metadataIdsObj: MetadataIdsObj = timeSeries.metadataIdsObj
       var points: List[Point] = List()
       val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
       val zoneId = ZoneId.systemDefault
-      data.timeSeries.get.timeSeries.foreach { tt: DataPoint =>
+      timeSeries.data.foreach { tt: DataPoint =>
         val dateTime: LocalDateTime = LocalDateTime.parse(tt.time, formatter)
         val p = Point("observed", dateTime.atZone(zoneId).toEpochSecond())
           // Tags
-          .addTag("moduleId", metaData.moduleId)
-          .addTag("valueType", metaData.valueType)
-          .addTag("parameterId", metaData.parameter.parameterId)
-          .addTag("locationId", metaData.location.locationId)
-          .addTag("timeSeriesType", metaData.timeSeriesType)
-          .addTag("timeStepId", metaData.timeStep.timeStepId)
+          .addTag("moduleId", metadataIdsObj.moduleId)
+          .addTag("valueType", metadataIdsObj.valueType.toString)
+          .addTag("parameterId", metadataIdsObj.parameterId)
+          .addTag("locationId", metadataIdsObj.locationId)
+          .addTag("timeSeriesType", metadataIdsObj.timeSeriesType.toString)
+          .addTag("timeStepId", metadataIdsObj.timeStepId)
           // Values
-          .addField("value", tt.value)
+          .addField("value", tt.value.get)
 
         points = points :+ p
       }
@@ -148,10 +160,9 @@ class VectorAdapter extends Actor with ActorLogging {
         if (isWritten) {
           log.info("Data written to DB Success.")
           log.info("Send Data to Extension Handler: {}", metadataAdapterRef)
-          metadataAdapterRef ! ExtensionHandlerData(data)
-          StoreSuccess(metaData)
+          StoreTimeseriesResponse(Created,  Option(metadataIdsObj.toMetadataIds))
         } else {
-          StoreFailure()
+          StoreTimeseriesResponse(InternalServerError, message = Option("Error while storing data."))
         }
       }) to sender()
 
@@ -159,7 +170,7 @@ class VectorAdapter extends Actor with ActorLogging {
       log.info("StoreValidatedTimeSeries... {}, {}", sender(), timeSeriesEnvelop)
       createNetcdfFile()
 
-    case GetTimeSeries(query) =>
+    case GetTimeSeries(query: MetadataObj) =>
       val influxdb = InfluxDB.connect("localhost", 8086)
       val database = influxdb.selectDatabase("wdias")
 
@@ -171,18 +182,18 @@ class VectorAdapter extends Actor with ActorLogging {
         s"AND timeSeriesType = '${query.timeSeriesType}' " +
         s"AND timeStepId = '${query.timeStep.timeStepId}'"
       log.info("Influx Query: {}", influxQuery)
-      val queryResult = database.query(influxQuery)
+      val queryResult: Future[QueryResult] = database.query(influxQuery)
 
       pipe(queryResult.mapTo[QueryResult] map { result =>
-        Result(createResponse(query, result))
+        createResponse(query, result)
       }) to sender()
 
     case ActorIdentity(_, Some(ref)) =>
-      log.info("Set Actor (VectorAdapter): {}", ref.path.name)
+      log.info("Set Actor (ScalarAdapter): {}", ref.path.name)
       ref.path.name match {
         case "metadataAdapter" => metadataAdapterRef = ref
         case "statusHandler" => statusHandlerRef = ref
-        case default => log.warning("Unknown Actor Identity in VectorAdapter: {}", default)
+        case default => log.warning("Unknown Actor Identity in ScalarAdapter: {}", default)
       }
     case ActorIdentity(_, None) =>
       context.stop(self)

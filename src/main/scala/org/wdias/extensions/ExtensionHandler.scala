@@ -3,13 +3,13 @@ package org.wdias.extensions
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify, PoisonPill}
 import akka.util.Timeout
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreValidatedTimeSeries
-import org.wdias.constant.TimeSeriesEnvelop
+import org.wdias.constant.TimeSeries
 
 import scala.concurrent.duration._
 
 object ExtensionHandler {
-  case class ExtensionHandlerData(timeSeriesEnvelop: TimeSeriesEnvelop)
-  case class ExtensionHandlerResult(timeSeriesEnvelop: TimeSeriesEnvelop)
+  case class ExtensionHandlerData(timeSeriesEnvelop: TimeSeries)
+  case class ExtensionHandlerResult(timeSeriesEnvelop: TimeSeries)
 }
 
 class ExtensionHandler extends Actor with ActorLogging {

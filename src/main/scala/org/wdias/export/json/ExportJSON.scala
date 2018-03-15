@@ -3,13 +3,13 @@ package org.wdias.export.json
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.GetTimeSeries
-import org.wdias.constant.Metadata
+import org.wdias.constant.{Metadata, MetadataObj}
 
 import scala.concurrent.duration._
 
 object ExportJSON {
 
-  case class ExportJSONData(metaData: Metadata)
+  case class ExportJSONData(metadataObj: MetadataObj)
 
 }
 
@@ -25,10 +25,10 @@ class ExportJSON extends Actor with ActorLogging {
   context.actorSelection("/user/vectorAdapter") ! Identify(None)
 
   def receive = {
-    case ExportJSONData(metaData) =>
-      log.info("Export JSON: {}", metaData)
+    case ExportJSONData(metadataObj: MetadataObj) =>
+      log.info("Export JSON: {}", metadataObj)
       log.info("Sender: {}, To: {}", sender(), scalarAdapterRef)
-      scalarAdapterRef forward GetTimeSeries(metaData)
+      scalarAdapterRef forward GetTimeSeries(metadataObj)
 
     case ActorIdentity(_, Some(ref)) =>
       log.info("Set Actor (ExportJSON): {}", ref.path.name)
