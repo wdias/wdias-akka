@@ -43,7 +43,7 @@ trait ImportJSONRoutes extends Protocols {
   lazy val importJSONRoutes: Route = {
     concat(
       // POST: `raw` Import
-      path("import" / "json" / "raw") {
+      pathPrefix("import" / "json" / "raw") {
         concat(
           // With TimeSeries Id
           (post & pathPrefix(Segment)) { timeseriesId: String =>
