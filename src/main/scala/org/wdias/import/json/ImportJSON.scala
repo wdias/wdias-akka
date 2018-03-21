@@ -88,10 +88,17 @@ class ImportJSON extends Actor with ActorLogging {
       val ss = sender()
       response map { metadataIdsObjs: Seq[MetadataIdsObj] =>
         if (metadataIdsObjs.nonEmpty) {
-          val metadataIdsObj = metadataIdsObjs.head
-          scalarAdapterRef forward StoreTimeSeries(TimeSeries(metadataIdsObj.timeSeriesId, metadataIdsObj, data))
+          val metadataIdsObjExist = metadataIdsObjs.head
+          pipe((scalarAdapterRef ? StoreTimeSeries(TimeSeries(metadataIdsObjExist.timeSeriesId, metadataIdsObjExist, data))).mapTo[StoreTimeseriesResponse] map { storeTS => storeTS}) to ss
         } else {
-          ss ! StoreTimeseriesResponse(NotFound, message = Option("Unable to find timeseries"))
+          val createTS = (metadataAdapterRef ? CreateTimeseriesWithIds(metadataIdsObj)).mapTo[Int]
+          createTS map { isCreated: Int =>
+            if(isCreated > 0) {
+              pipe((scalarAdapterRef ? StoreTimeSeries(TimeSeries(metadataIdsObj.timeSeriesId, metadataIdsObj.toMetadataIds.toMetadataIdsObj, data))).mapTo[StoreTimeseriesResponse] map { storeTS => storeTS}) to ss
+            } else {
+              ss ! StoreTimeseriesResponse(NotFound, message = Option("Unable to find timeseries"))
+            }
+          }
         }
       }
 
