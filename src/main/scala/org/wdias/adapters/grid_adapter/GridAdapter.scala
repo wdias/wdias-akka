@@ -10,7 +10,7 @@ import akka.pattern.pipe
 import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
 import org.wdias.adapters.grid_adapter.GridAdapter._
-import org.wdias.adapters.scalar_adapter.ScalarAdapter.{GetTimeSeries, StoreTimeSeries, StoreTimeseriesResponse, StoreValidatedTimeSeries}
+import org.wdias.adapters.scalar_adapter.ScalarAdapter.{GetTimeSeries, StoreTimeSeries, StoreTimeseriesResponse}
 import org.wdias.extensions.ExtensionHandler.ExtensionHandlerData
 import ucar.ma2.DataType
 import ucar.nc2.{Attribute, Dimension}
@@ -167,10 +167,6 @@ class GridAdapter extends Actor with ActorLogging {
           StoreTimeseriesResponse(InternalServerError, message = Option("Error while storing data."))
         }
       }) to sender()
-
-    case StoreValidatedTimeSeries(timeSeriesEnvelop) =>
-      log.info("StoreValidatedTimeSeries... {}, {}", sender(), timeSeriesEnvelop)
-      createNetcdfFile()
 
     case GetTimeSeries(query: MetadataObj) =>
       val influxdb = InfluxDB.connect("localhost", 8086)

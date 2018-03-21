@@ -10,7 +10,6 @@ import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import org.wdias.adapters.scalar_adapter.ScalarAdapter.Result
 import org.wdias.constant.{Metadata, Protocols}
 
 import scala.concurrent.Future

@@ -36,11 +36,7 @@ object ScalarAdapter {
   case class GetTimeseriesResponse(statusCode: StatusCode, timeseries: Option[TimeSeries] = Option(null), message: Option[String] = Option(null))
 
   // TODO: To be removed
-  case class StoreValidatedTimeSeries(timeSeriesEnvelop: TimeSeries)
-
   case class StoreSuccess(metadata: Metadata)
-
-  case class Result(timeSeriesEnvelop: TimeSeries)
 
   case class StoreFailure()
 
@@ -165,10 +161,6 @@ class ScalarAdapter extends Actor with ActorLogging {
           StoreTimeseriesResponse(InternalServerError, message = Option("Error while storing data."))
         }
       }) to sender()
-
-    case StoreValidatedTimeSeries(timeSeriesEnvelop) =>
-      log.info("StoreValidatedTimeSeries... {}, {}", sender(), timeSeriesEnvelop)
-      createNetcdfFile()
 
     case GetTimeSeries(query: MetadataObj) =>
       val influxdb = InfluxDB.connect("localhost", 8086)
