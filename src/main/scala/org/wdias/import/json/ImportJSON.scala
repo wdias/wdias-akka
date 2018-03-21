@@ -2,6 +2,7 @@ package org.wdias.`import`.json
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.http.scaladsl.model.StatusCodes.{NotFound}
+import akka.pattern.pipe
 import akka.util.Timeout
 import org.wdias.adapters.metadata_adapter.MetadataAdapter._
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.{StoreTimeSeries, StoreTimeseriesResponse}
@@ -26,7 +27,7 @@ class ImportJSON extends Actor with ActorLogging {
 
   import ImportJSON._
 
-  implicit val timeout: Timeout = Timeout(20 seconds)
+  implicit val timeout: Timeout = Timeout(15 seconds)
 
   var scalarAdapterRef: ActorRef = _
   context.actorSelection("/user/scalarAdapter") ! Identify(None)
@@ -37,7 +38,7 @@ class ImportJSON extends Actor with ActorLogging {
 
   def receive: Receive = {
     case ImportJSONDataWithId(timeseriesId: String, data: List[DataPoint]) =>
-      log.info("ImportJSONDataWithId With Id > {}", timeseriesId)
+      log.info("Forwarding ImportJSONData With Id > {}", timeseriesId)
       val response: Future[Option[MetadataIdsObj]] = (metadataAdapterRef ? GetTimeseriesById(timeseriesId)).mapTo[Option[MetadataIdsObj]]
       val ss = sender()
       response map { metadataIdsObj: Option[MetadataIdsObj] =>
@@ -49,32 +50,39 @@ class ImportJSON extends Actor with ActorLogging {
         }
       }
     case ImportJSONDataWithMetadata(metadataObj: MetadataObj, data: List[DataPoint]) =>
-      log.debug("Forwarding ImportJSONData With Metadata > ", scalarAdapterRef)
+      log.info("Forwarding ImportJSONData With Metadata > {}", scalarAdapterRef)
       val response: Future[Seq[MetadataIdsObj]] = (metadataAdapterRef ? GetTimeseries(
         moduleId = Option(metadataObj.moduleId),
         valueType = Option(metadataObj.valueType.toString),
         parameterId = Option(metadataObj.parameter.parameterId),
         locationId = Option(metadataObj.location.locationId),
-        timeSeriesType = Option(metadataObj.timeSeriesType.toString),
+        timeSeriesType = Option(metadataObj.timeSeriesType),
         timeStepId = Option(metadataObj.timeStep.timeStepId)
       )).mapTo[Seq[MetadataIdsObj]]
       val ss = sender()
       response map { metadataIdsObjs: Seq[MetadataIdsObj] =>
         if (metadataIdsObjs.nonEmpty) {
           val metadataIdsObj = metadataIdsObjs.head
-          scalarAdapterRef forward StoreTimeSeries(TimeSeries(metadataIdsObj.timeSeriesId, metadataIdsObj, data))
+          pipe((scalarAdapterRef ? StoreTimeSeries(TimeSeries(metadataIdsObj.timeSeriesId, metadataIdsObj, data))).mapTo[StoreTimeseriesResponse] map { storeTS => storeTS}) to ss
         } else {
-          ss ! StoreTimeseriesResponse(NotFound, message = Option("Unable to find timeseries"))
+          val createTS = (metadataAdapterRef ? CreateTimeseries(metadataObj)).mapTo[Int]
+          createTS map { isCreated: Int =>
+            if(isCreated > 0) {
+              pipe((scalarAdapterRef ? StoreTimeSeries(TimeSeries(metadataObj.timeSeriesId, metadataObj.toMetadataIds.toMetadataIdsObj, data))).mapTo[StoreTimeseriesResponse] map { storeTS => storeTS}) to ss
+            } else {
+              ss ! StoreTimeseriesResponse(NotFound, message = Option("Unable to find timeseries"))
+            }
+          }
         }
       }
     case ImportJSONDataWithMetadataIds(metadataIdsObj: MetadataIdsObj, data: List[DataPoint]) =>
-      log.debug("Forwarding ImportJSONData With MetadataIds > ", scalarAdapterRef)
+      log.debug("Forwarding ImportJSONData With MetadataIds > {}", scalarAdapterRef)
       val response: Future[Seq[MetadataIdsObj]] = (metadataAdapterRef ? GetTimeseries(
         moduleId = Option(metadataIdsObj.moduleId),
         valueType = Option(metadataIdsObj.valueType.toString),
         parameterId = Option(metadataIdsObj.parameterId),
         locationId = Option(metadataIdsObj.locationId),
-        timeSeriesType = Option(metadataIdsObj.timeSeriesType.toString),
+        timeSeriesType = Option(metadataIdsObj.timeSeriesType),
         timeStepId = Option(metadataIdsObj.timeStepId)
       )).mapTo[Seq[MetadataIdsObj]]
       val ss = sender()

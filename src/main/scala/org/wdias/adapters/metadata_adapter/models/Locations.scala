@@ -48,6 +48,10 @@ object LocationsDAO extends TableQuery(new Locations(_)) with DBComponent {
     db.run(this += location)
   }
 
+  def upsert(location: Location): Future[Int] = {
+    db.run(this.insertOrUpdate(location))
+  }
+
   def deleteById(locationId: String): Future[Int] = {
     db.run(this.filter(_.locationId === locationId).delete)
   }

@@ -50,13 +50,13 @@ object TimeSeriesMetadataDAO extends TableQuery(new TimeSeriesMetadataTable(_)) 
     db.run(this.filter(_.timeSeriesId === timeseriesId).result).map(_.headOption)
   }
 
-  def find(timeSeriesId: Option[String], moduleId: Option[String], valueType: Option[String], parameterId: Option[String], locationId: Option[String], timeSeriesType: Option[String], timeStepId: Option[String]): Future[Seq[MetadataIdsObj]] = {
+  def find(timeSeriesId: Option[String], moduleId: Option[String], valueType: Option[String], parameterId: Option[String], locationId: Option[String], timeSeriesType: Option[TimeSeriesType], timeStepId: Option[String]): Future[Seq[MetadataIdsObj]] = {
     val q1 = if (timeSeriesId.isEmpty) this else this.filter(_.timeSeriesId === timeSeriesId.get)
     val q2 = if (moduleId.isEmpty) q1 else q1.filter(_.moduleId === moduleId)
     val q3 = if (valueType.isEmpty) q2 else q2.filter(_.valueType.asInstanceOf[Rep[String]] === valueType.get)
     val q4 = if (parameterId.isEmpty) q3 else q3.filter(_.parameterId === parameterId.get)
     val q5 = if (locationId.isEmpty) q4 else q4.filter(_.locationId === locationId.get)
-    val q6 = if (timeSeriesType.isEmpty) q5 else q5.filter(_.timeSeriesType.asInstanceOf[Rep[String]] === timeSeriesType.get)
+    val q6 = if (timeSeriesType.isEmpty) q5 else q5.filter(_.timeSeriesType.asInstanceOf[Rep[String]] === timeSeriesType.get.toString)
     val q7 = if (timeStepId.isEmpty) q6 else q6.filter(_.timeStepId === timeStepId.get)
     val action = q7.result
     db.run(action)

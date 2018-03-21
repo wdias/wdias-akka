@@ -67,10 +67,10 @@ case class Location(
 // 5. TimeSeriesType
 object TimeSeriesType extends Enumeration {
   type TimeSeriesType = Value
-  val ExternalHistorical: TimeSeriesType.Value = Value("External Historical")
-  val ExternalForecasting: TimeSeriesType.Value = Value("External Forecasting")
-  val SimulatedHistorical: TimeSeriesType.Value = Value("Simulated Historical")
-  val SimulatedForecasting: TimeSeriesType.Value = Value("Simulated Forecasting")
+  val ExternalHistorical: TimeSeriesType.Value = Value("External_Historical")
+  val ExternalForecasting: TimeSeriesType.Value = Value("External_Forecasting")
+  val SimulatedHistorical: TimeSeriesType.Value = Value("Simulated_Historical")
+  val SimulatedForecasting: TimeSeriesType.Value = Value("Simulated_Forecasting")
 }
 
 import TimeSeriesType._

@@ -60,6 +60,10 @@ object ParametersDAO extends TableQuery(new Parameters(_)) with DBComponent {
     db.run(this += parameter)
   }
 
+  def upsert(parameterObj: ParameterObj): Future[Int] = {
+    db.run(this.insertOrUpdate(parameterObj))
+  }
+
   def deleteById(parameterId: String): Future[Int] = {
     db.run(this.filter(_.parameterId === parameterId).delete)
   }

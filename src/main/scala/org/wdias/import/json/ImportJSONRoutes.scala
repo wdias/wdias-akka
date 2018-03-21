@@ -37,7 +37,7 @@ trait ImportJSONRoutes extends Protocols {
   def importCSVRef: ActorRef
 
   // Required by the `ask` (?) method below
-  implicit lazy val timeoutImportJSONRoutes: Timeout = Timeout(5.seconds) // TODO: Obtain from config
+  implicit lazy val timeoutImportJSONRoutes: Timeout = Timeout(20.seconds) // TODO: Obtain from config
 
   // --- All Input Routes ---
   lazy val importJSONRoutes: Route = {
@@ -63,14 +63,22 @@ trait ImportJSONRoutes extends Protocols {
           (post & entity(as[TimeSeriesWithMetadata])) { timeSeriesWithMetadata =>
             logImportJSONRoutes.info("/import/json/raw POST request: > {}", timeSeriesWithMetadata)
             if(timeSeriesWithMetadata.metadata.isDefined) {
-              val response: Future[StoreSuccess] = (importJSONRef ? ImportJSONDataWithMetadata(timeSeriesWithMetadata.metadata.get.toMetadataObj, timeSeriesWithMetadata.timeSeries)).mapTo[StoreSuccess]
+              val response: Future[StoreTimeseriesResponse] = (importJSONRef ? ImportJSONDataWithMetadata(timeSeriesWithMetadata.metadata.get.toMetadataObj, timeSeriesWithMetadata.timeSeries)).mapTo[StoreTimeseriesResponse]
               onSuccess(response) { result =>
-                complete(Created -> result.metadata)
+                if(result.metadataIds.isDefined) {
+                  complete(result.statusCode -> result.metadataIds.get)
+                } else {
+                  complete(result.statusCode -> result.message.get)
+                }
               }
             } else if(timeSeriesWithMetadata.metadataIds.isDefined) {
-              val response: Future[StoreSuccess] = (importJSONRef ? ImportJSONDataWithMetadataIds(timeSeriesWithMetadata.metadataIds.get.toMetadataIdsObj, timeSeriesWithMetadata.timeSeries)).mapTo[StoreSuccess]
+              val response: Future[StoreTimeseriesResponse] = (importJSONRef ? ImportJSONDataWithMetadataIds(timeSeriesWithMetadata.metadataIds.get.toMetadataIdsObj, timeSeriesWithMetadata.timeSeries)).mapTo[StoreTimeseriesResponse]
               onSuccess(response) { result =>
-                complete(Created -> result.metadata)
+                if(result.metadataIds.isDefined) {
+                  complete(result.statusCode -> result.metadataIds.get)
+                } else {
+                  complete(result.statusCode -> result.message.get)
+                }
               }
             } else {
               complete(NotFound -> "Can not find timeseries metadata.")
