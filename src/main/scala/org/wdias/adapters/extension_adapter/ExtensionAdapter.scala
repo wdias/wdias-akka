@@ -41,23 +41,23 @@ class ExtensionAdapter extends Actor with ActorLogging {
 
   def receive: Receive = {
     // Handle Extension MSGs
-    case GetExtensionById(extensionId) =>
+    case GetExtensionById(extensionId: String) =>
       log.info("GET Extension By Id: {}", extensionId)
       pipe(ExtensionsDAO.findById(extensionId).mapTo[Option[ExtensionObj]] map { result: Option[ExtensionObj] =>
         result
       }) to sender()
-    case GetExtensions(extensionId, extension, function) =>
+    case GetExtensions(extensionId: String, extension: String, function: String) =>
       log.info("GET Query Extensions: {} {}", extensionId)
       pipe(ExtensionsDAO.find(extensionId, extension, function).mapTo[Seq[ExtensionObj]] map { result: Seq[ExtensionObj] =>
         result
       }) to sender()
-    case CreateExtension(extension) =>
+    case CreateExtension(extension: ExtensionObj) =>
       log.info("POST Extension: {}", extension)
       val isCreated = ExtensionsDAO.create(extension)
       pipe(isCreated.mapTo[Int] map { result: Int =>
         result
       }) to sender()
-    case DeleteExtensionById(extensionId) =>
+    case DeleteExtensionById(extensionId: String) =>
       log.info("DELETE Extension By Id: {}", extensionId)
       val isDeleted = ExtensionsDAO.deleteById(extensionId)
       pipe(isDeleted.mapTo[Int] map { result: Int =>
@@ -65,13 +65,12 @@ class ExtensionAdapter extends Actor with ActorLogging {
       }) to sender()
 
     // Handle Transformation MSGs
-    case GetTransformationById(extensionId) =>
+    case GetTransformationById(extensionId: String) =>
       log.info("GET TransformationExtension By Id: {}", extensionId)
       pipe(TransformationsDAO.findById(extensionId).mapTo[Option[TransformationExtensionObj]] map { result: Option[TransformationExtensionObj] =>
-        log.info(">>>>> : {}", result)
         result
       }) to sender()
-    case GetTransformations(extensionId) =>
+    case GetTransformations(extensionId: String) =>
       log.info("GET Query TransformationExtensions: {} {}", extensionId)
       pipe(TransformationsDAO.find(extensionId).mapTo[Seq[TransformationExtensionObj]] map { result: Seq[TransformationExtensionObj] =>
         result
@@ -82,7 +81,7 @@ class ExtensionAdapter extends Actor with ActorLogging {
       pipe(isCreated.mapTo[Int] map { result: Int =>
         result
       }) to sender()
-    case DeleteTransformationById(transformationExtensionId) =>
+    case DeleteTransformationById(transformationExtensionId: String) =>
       log.info("DELETE TransformationExtension By Id: {}", transformationExtensionId)
       val isDeleted = TransformationsDAO.deleteById(transformationExtensionId)
       pipe(isDeleted.mapTo[Int] map { result: Int =>
