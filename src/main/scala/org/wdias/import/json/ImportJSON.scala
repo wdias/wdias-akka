@@ -44,7 +44,7 @@ class ImportJSON extends Actor with ActorLogging {
       response map { metadataIdsObj: Option[MetadataIdsObj] =>
         log.info("Found Timeseries > {}", metadataIdsObj.getOrElse("None"))
         if (metadataIdsObj.isDefined) {
-          scalarAdapterRef forward StoreTimeSeries(TimeSeries(timeseriesId, metadataIdsObj.get, data))
+          pipe((scalarAdapterRef ? StoreTimeSeries(TimeSeries(metadataIdsObj.get.timeSeriesId, metadataIdsObj.get, data))).mapTo[StoreTimeseriesResponse] map { storeTS => storeTS}) to ss
         } else {
           ss ! StoreTimeseriesResponse(NotFound, message = Option("Unable to find timeseries"))
         }

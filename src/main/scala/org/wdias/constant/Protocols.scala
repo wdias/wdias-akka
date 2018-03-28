@@ -182,7 +182,7 @@ case class TimeSeries(timeSeriesId: String, metadataIdsObj: MetadataIdsObj, data
 
   def addDataPoint(dataPoint: DataPoint): TimeSeries = copy(data = data :+ dataPoint)
 
-  def addDataPoints(dataPoints: Array[DataPoint]): TimeSeries = copy(data = data ++ dataPoints)
+  def addDataPoints(dataPoints: List[DataPoint]): TimeSeries = copy(data = data ++ dataPoints)
 }
 
 case class TimeSeriesWithMetadata(metadata: Option[Metadata] = Option(null), metadataIds: Option[MetadataIds] = Option(null), timeSeries: List[DataPoint])
