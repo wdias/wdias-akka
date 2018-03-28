@@ -2,7 +2,6 @@ package org.wdias.export.csv
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
-import org.wdias.adapters.scalar_adapter.ScalarAdapter.GetTimeSeries
 import org.wdias.constant.Metadata
 
 import scala.concurrent.duration._
@@ -23,7 +22,6 @@ class ExportCSV extends Actor with ActorLogging {
   def receive = {
     case ExportCSVFile(metaData) =>
       log.debug("Export CSV: {}", metaData)
-      scalarAdapterRef forward GetTimeSeries(metaData)
 
     case ActorIdentity(_, Some(ref)) =>
       log.info("Set Actor (ExportCSV): {}", ref.path.name)

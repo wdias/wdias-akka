@@ -37,12 +37,10 @@ class ImportCSV extends Actor with ActorLogging {
       source.map(_.split(",").toVector)
         .foreach(line => {
           val dateTime: LocalDateTime = LocalDateTime.parse(line(0), formatter)
-          val p = DataPoint(dateTime.format(formatter), line(1).toDouble)
+          val p = DataPoint(dateTime.format(formatter)) addValue  line(1).toDouble
 
           points = points :+ p
         })
-
-      scalarAdapterRef forward StoreTimeSeries(TimeSeriesEnvelop(metaData, Some(TimeSeries(points)), None))
 
     case ActorIdentity(_, Some(ref)) =>
       log.info("Set Actor (ImportCSV): {}", ref.path.name)

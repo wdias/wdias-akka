@@ -3,13 +3,13 @@ package org.wdias.api
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreTimeSeries
-import org.wdias.constant.TimeSeriesEnvelop
+import org.wdias.constant.TimeSeries
 
 import scala.concurrent.duration._
 
 object QueryHandler {
 
-  case class ImportJSONData(timeSeriesEnvelop: TimeSeriesEnvelop)
+  case class ImportJSONData(timeSeriesEnvelop: TimeSeries)
 
 }
 

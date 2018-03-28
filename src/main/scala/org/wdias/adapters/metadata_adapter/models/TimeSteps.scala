@@ -60,6 +60,10 @@ object TimeStepsDAO extends TableQuery(new TimeSteps(_)) with DBComponent {
     db.run(this += timeStep)
   }
 
+  def upsert(timeStepObj: TimeStepObj): Future[Int] = {
+    db.run(this.insertOrUpdate(timeStepObj))
+  }
+
   def deleteById(timeStepId: String): Future[Int] = {
     db.run(this.filter(_.timeStepId === timeStepId).delete)
   }

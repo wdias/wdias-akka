@@ -11,7 +11,6 @@ import org.wdias.`import`.json.ImportJSON
 import org.wdias.adapters.extension_adapter.ExtensionAdapter
 import org.wdias.adapters.grid_adapter.GridAdapter
 import org.wdias.extensions.ExtensionHandler
-import org.wdias.input.OnDemandInput.{config, routes}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.StdIn

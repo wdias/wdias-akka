@@ -2,7 +2,7 @@ package org.wdias.extensions.validation
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
-import org.wdias.constant.TimeSeriesEnvelop
+import org.wdias.constant.TimeSeries
 import org.wdias.extensions.ExtensionHandler.ExtensionHandlerResult
 
 import scala.concurrent.duration._

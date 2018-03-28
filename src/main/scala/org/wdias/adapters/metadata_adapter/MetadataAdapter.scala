@@ -5,6 +5,7 @@ import akka.pattern.pipe
 import akka.util.Timeout
 import org.wdias.adapters.metadata_adapter.MetadataAdapter._
 import org.wdias.adapters.metadata_adapter.models._
+import org.wdias.constant.TimeSeriesType.TimeSeriesType
 import org.wdias.constant._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -54,7 +55,7 @@ object MetadataAdapter {
   // Timeseries
   case class GetTimeseriesById(timeseriesId: String)
 
-  case class GetTimeseries(timeseriesId: String = "", moduleId: String = "", valueType: String = "", parameterId: String, locationId: String, timeSeriesType: String, timeStepId: String)
+  case class GetTimeseries(timeseriesId: Option[String] = Option(null), moduleId: Option[String] = Option(null), valueType: Option[String] = Option(null), parameterId: Option[String] = Option(null), locationId: Option[String] = Option(null), timeSeriesType: Option[TimeSeriesType] = Option(null), timeStepId: Option[String] = Option(null))
 
   case class CreateTimeseries(metadataObj: MetadataObj)
 
@@ -155,21 +156,43 @@ class MetadataAdapter extends Actor with ActorLogging {
       pipe(TimeSeriesMetadataDAO.findById(timeseriesId).mapTo[Option[MetadataIdsObj]] map { result: Option[MetadataIdsObj] =>
         result
       }) to sender()
-    case GetTimeseries(timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId) =>
+    case GetTimeseries(timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType: Option[TimeSeriesType], timeStepId) =>
       log.info("GET Query Timeseries: {} {} {} {} ", timeSeriesId, moduleId, valueType, parameterId)
       log.info("2 GET Query Timeseries: {} {} {} ", locationId, timeSeriesType, timeStepId)
       pipe(TimeSeriesMetadataDAO.find(timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId).
         mapTo[Seq[MetadataIdsObj]] map { result: Seq[MetadataIdsObj] =>
         result
       }) to sender()
-    case CreateTimeseries(m) =>
-      log.info("POST Timeseries: {}", m)
-      val metadataIdsObj = MetadataIdsObj(null, m.moduleId, m.valueType, m.parameter.parameterId, m.location.locationId, m.timeSeriesType, m.timeStep.timeStepId)
-      val isCreated = TimeSeriesMetadataDAO.create(metadataIdsObj)
-      pipe(isCreated.mapTo[Int] map { result: Int =>
-        result
-      }) to sender()
-    case CreateTimeseriesWithIds(metadataIds) =>
+    case CreateTimeseries(m: MetadataObj) =>
+      val ss = sender()
+      log.info("POST Timeseries: {}, {}", ss, m)
+      val createLocation = LocationsDAO.upsert(m.location).mapTo[Int]
+      createLocation map { isLocationCreated: Int =>
+        if(isLocationCreated > 0) {
+          val createParameter = ParametersDAO.upsert(m.parameter).mapTo[Int]
+          createParameter map { isParameterCreated: Int =>
+            if(isParameterCreated > 0) {
+              val createTimeStep = TimeStepsDAO.upsert(m.timeStep).mapTo[Int]
+              createTimeStep map { isTimeStepCreated: Int =>
+                if(isTimeStepCreated > 0) {
+                  val metadataIdsObj = MetadataIdsObj(null, m.moduleId, m.valueType, m.parameter.parameterId, m.location.locationId, m.timeSeriesType, m.timeStep.timeStepId)
+                  val isCreated = TimeSeriesMetadataDAO.create(metadataIdsObj)
+                  pipe(isCreated.mapTo[Int] map { result: Int =>
+                    result
+                  }) to ss
+                } else {
+                  ss ! isTimeStepCreated
+                }
+              }
+            } else {
+              ss ! isParameterCreated
+            }
+          }
+        } else {
+          ss ! isLocationCreated
+        }
+      }
+    case CreateTimeseriesWithIds(metadataIds: MetadataIdsObj) =>
       log.info("POST Timeseries: {}", metadataIds)
       val isCreated = TimeSeriesMetadataDAO.create(metadataIds)
       pipe(isCreated.mapTo[Int] map { result: Int =>

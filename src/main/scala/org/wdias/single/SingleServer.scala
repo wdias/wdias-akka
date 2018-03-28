@@ -36,18 +36,21 @@ object SingleServer extends App with SingleRoutes {
   // Needed for the Future and its methods flatMap/onComplete in the end
   implicit val executionContext: ExecutionContext = system.dispatcher
 
-  // Create Extension Actors
-  implicit val extensionAdapterRef: ActorRef = system.actorOf(Props[ExtensionAdapter], "extensionAdapter")
-  implicit val extensionHandlerRef: ActorRef = system.actorOf(Props[ExtensionHandler], "extensionHandler")
-  implicit val transformationRef: ActorRef = system.actorOf(Props[Transformation], "transformation")
-  implicit val interpolationRef: ActorRef = system.actorOf(Props[Interpolation], "interpolation")
-  implicit val validationRef: ActorRef = system.actorOf(Props[Validation], "validation")
+  // Create Metadata Adapters
+  implicit val metadataAdapterRef: ActorRef = system.actorOf(Props[MetadataAdapter], "metadataAdapter")
+  implicit val statusHandlerRef: ActorRef = system.actorOf(Props[StatusHandler], "statusHandler")
 
   // Create Adapters
-  implicit val metadataAdapterRef: ActorRef = system.actorOf(Props[MetadataAdapter], "metadataAdapter")
   implicit val scalarAdapterRef: ActorRef = system.actorOf(Props[ScalarAdapter], "scalarAdapter")
   implicit val vectorAdapterRef: ActorRef = system.actorOf(Props[VectorAdapter], "vectorAdapter")
   implicit val gridAdapterRef: ActorRef = system.actorOf(Props[GridAdapter], "gridAdapter")
+
+  // Create Extension Actors
+  implicit val extensionAdapterRef: ActorRef = system.actorOf(Props[ExtensionAdapter], "extensionAdapter")
+  implicit val transformationRef: ActorRef = system.actorOf(Props[Transformation], "transformation")
+  implicit val interpolationRef: ActorRef = system.actorOf(Props[Interpolation], "interpolation")
+  implicit val validationRef: ActorRef = system.actorOf(Props[Validation], "validation")
+  implicit val extensionHandlerRef: ActorRef = system.actorOf(Props[ExtensionHandler], "extensionHandler")
 
   // Create Export Actors
   val exportJSONRef: ActorRef = system.actorOf(Props[ExportJSON], "exportJSON")
@@ -58,7 +61,6 @@ object SingleServer extends App with SingleRoutes {
   val importCSVRef: ActorRef = system.actorOf(Props[ImportCSV], "importCSV")
 
   // Create API Actors
-  implicit val statusHandlerRef: ActorRef = system.actorOf(Props[StatusHandler], "statusHandler")
   implicit val queryHandlerRef: ActorRef = system.actorOf(Props[QueryHandler], "queryHandler")
   implicit val archiveHandlerRef: ActorRef = system.actorOf(Props[ArchiveHandler], "archiveHandler")
 

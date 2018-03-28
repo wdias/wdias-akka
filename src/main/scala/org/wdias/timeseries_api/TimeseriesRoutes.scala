@@ -30,7 +30,7 @@ trait TimeseriesRoutes extends Protocols {
   def metadataAdapterRef: ActorRef
 
   // Required by the `ask` (?) method below
-  implicit lazy val timeoutTimeseriesRoutes: Timeout = Timeout(15.seconds) // TODO: Obtain from config
+  implicit lazy val timeoutTimeseriesRoutes: Timeout = Timeout(20.seconds) // TODO: Obtain from config
 
   // --- All Input Routes ---
   lazy val timeseriesRoutes: Route = {
@@ -48,7 +48,8 @@ trait TimeseriesRoutes extends Protocols {
           // GET: Query on Timeseries
           (get & pathEnd & parameters('timeseriesId.as[String].?, 'moduleId.as[String].?, 'valueType.as[String].?, 'parameterId.as[String].?, 'locationId.as[String].?, 'timeseriesType.as[String].?, 'timeStepId.as[String].?)) { (timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId) =>
             logTimeseriesRoutes.info("/timeseries GET request: List")
-            val response: Future[Seq[MetadataIdsObj]] = (metadataAdapterRef ? GetTimeseries(timeSeriesId.getOrElse(""), moduleId.getOrElse(""), valueType.getOrElse(""), parameterId.getOrElse(""), locationId.getOrElse(""), timeSeriesType.getOrElse(""), timeStepId.getOrElse(""))).mapTo[Seq[MetadataIdsObj]]
+            val timeSeriesTypeNew = if(timeSeriesType.isDefined) TimeSeriesType.withName(timeSeriesType.get)  else null
+            val response: Future[Seq[MetadataIdsObj]] = (metadataAdapterRef ? GetTimeseries(timeSeriesId, moduleId, valueType, parameterId, locationId, Option(timeSeriesTypeNew), timeStepId)).mapTo[Seq[MetadataIdsObj]]
             onSuccess(response) { timeseries: Seq[MetadataIdsObj] =>
               complete(Created -> timeseries.map(_.toMetadataIds))
             }

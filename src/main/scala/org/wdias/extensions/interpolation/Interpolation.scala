@@ -7,14 +7,14 @@ import org.wdias.adapters.scalar_adapter.ScalarAdapter.{StoreSuccess, StoreTimeS
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import akka.pattern.{ask, pipe}
-import org.wdias.constant.TimeSeriesEnvelop
+import org.wdias.constant.TimeSeries
 import org.wdias.extensions.interpolation.Interpolation.InterpolationData
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Interpolation {
 
-  case class InterpolationData(timeSeriesEnvelop: TimeSeriesEnvelop)
+  case class InterpolationData(timeSeriesEnvelop: TimeSeries)
 
 }
 

@@ -17,9 +17,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{FileIO, Framing}
 import akka.util.{ByteString, Timeout}
 import org.wdias.`import`.csv.ImportCSV.ImportCSVFile
-import org.wdias.`import`.json.ImportJSON.ImportJSONData
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreSuccess
-import org.wdias.constant.{Metadata, Protocols, TimeSeriesEnvelop}
+import org.wdias.constant.{Metadata, Protocols, TimeSeries, TimeSeriesWithMetadata}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -44,12 +43,9 @@ trait ImportCSVRoutes extends Protocols {
   lazy val importCSVRoutes: Route = {
     concat(
       path("import" / "csv" / "raw") {
-        (post & entity(as[TimeSeriesEnvelop])) { timeSeriesEnvelop =>
+        (post & entity(as[TimeSeriesWithMetadata])) { timeSeriesEnvelop =>
           logImportCSVRoutes.info("/import POST request: > {}", timeSeriesEnvelop)
-          val response: Future[StoreSuccess] = (importJSONRef ? ImportJSONData(timeSeriesEnvelop)).mapTo[StoreSuccess]
-          onSuccess(response) { result =>
-            complete(Created -> result.metadata)
-          }
+          complete(Created)
         }
       },
       path("import" / "csv" / "upload") {
@@ -87,14 +83,10 @@ trait ImportCSVRoutes extends Protocols {
         }
       },
       path("import" / "csv" / "fetch") {
-        (post & entity(as[TimeSeriesEnvelop])) { fetchInfo =>
+        (post & entity(as[TimeSeriesWithMetadata])) { fetchInfo =>
           // TODO: Working for large files
           // new URL("https://www.unidata.ucar.edu/software/netcdf/examples/test_echam_spectral-deflated.nc") #> new File("/tmp/test_echam_spectral-deflated.nc") !!
-          val response: Future[StoreSuccess] = (importJSONRef ? ImportJSONData(fetchInfo)).mapTo[StoreSuccess]
-          logImportCSVRoutes.info("Fetched test_echam_spectral-deflated.nc")
-          onSuccess(response) { result =>
-            complete(Created -> result.metadata)
-          }
+            complete(Created)
         }
       }
     )

@@ -4,6 +4,8 @@ import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneId}
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
+import akka.http.scaladsl.model.StatusCode
+import akka.http.scaladsl.model.StatusCodes.{OK, Created, InternalServerError}
 import akka.pattern.pipe
 import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
@@ -11,6 +13,8 @@ import org.wdias.adapters.scalar_adapter.ScalarAdapter._
 import org.wdias.extensions.ExtensionHandler.ExtensionHandlerData
 import ucar.ma2.DataType
 import ucar.nc2.{Attribute, Dimension}
+
+import scala.concurrent.Future
 // Check to Run in Actor Context
 import java.nio.file.{Files, Paths}
 import java.util
@@ -23,14 +27,16 @@ import scala.concurrent.duration._
 
 object ScalarAdapter {
 
-  case class StoreTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
-  case class StoreValidatedTimeSeries(timeSeriesEnvelop: TimeSeriesEnvelop)
+  case class StoreTimeSeries(timeSeries: TimeSeries)
 
-  case class GetTimeSeries(metaData: Metadata)
+  case class GetTimeSeries(metadataIdsObj: MetadataIdsObj)
 
+  case class StoreTimeseriesResponse(statusCode: StatusCode, metadataIds: Option[MetadataIds] = Option(null), message: Option[String] = Option(null))
+
+  case class GetTimeseriesResponse(statusCode: StatusCode, timeseries: Option[TimeSeries] = Option(null), message: Option[String] = Option(null))
+
+  // TODO: To be removed
   case class StoreSuccess(metadata: Metadata)
-
-  case class Result(timeSeriesEnvelop: TimeSeriesEnvelop)
 
   case class StoreFailure()
 
@@ -45,24 +51,23 @@ class ScalarAdapter extends Actor with ActorLogging {
   var statusHandlerRef: ActorRef = _
   context.actorSelection("/user/statusHandler") ! Identify(None)
 
-  def createResponse(metaData: Metadata, result: QueryResult): TimeSeriesEnvelop = {
+  def createResponse(query: MetadataIdsObj, result: QueryResult): TimeSeries = {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
-    var points: List[DataPoint] = List()
+    val timeSeries: TimeSeries = TimeSeries(query.timeSeriesId, query.toMetadataIds.toMetadataIdsObj)
     if(result.series.nonEmpty) {
       val records: List[Record] = result.series.head.records
       val valueIndex = result.series.head.columns.indexOf("value")
-      records.foreach { record =>
+      timeSeries.addDataPoints(records map { record =>
         log.info(record.allValues.toString())
         val dateTimeStr: String = record.allValues(0).toString.split('Z')(0)
         val dateTime = LocalDateTime.parse(dateTimeStr)
         val value: Double = record.allValues(valueIndex).toString.toDouble
-        points = points :+ DataPoint(dateTime.format(formatter), value)
-      }
+        DataPoint(dateTime.format(formatter)).addValue(value)
+      })
+    } else {
+      timeSeries
     }
-    val timeSeries = Some(TimeSeries(points))
-    println("Created Response TimeSeries")
-    TimeSeriesEnvelop(metaData, timeSeries, None)
   }
 
   def createNetcdfFile(): Unit = {
@@ -120,26 +125,26 @@ class ScalarAdapter extends Actor with ActorLogging {
   }
 
   def receive: Receive = {
-    case StoreTimeSeries(data) =>
+    case StoreTimeSeries(timeSeries: TimeSeries) =>
       log.info("StoringTimeSeries... {}", sender())
       val influxdb = InfluxDB.connect("localhost", 8086)
       val database = influxdb.selectDatabase("wdias")
-      val metaData: Metadata = data.metaData
+      val metadataIdsObj: MetadataIdsObj = timeSeries.metadataIdsObj
       var points: List[Point] = List()
       val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
       val zoneId = ZoneId.systemDefault
-      data.timeSeries.get.timeSeries.foreach { tt: DataPoint =>
+      timeSeries.data.foreach { tt: DataPoint =>
         val dateTime: LocalDateTime = LocalDateTime.parse(tt.time, formatter)
         val p = Point("observed", dateTime.atZone(zoneId).toEpochSecond())
           // Tags
-          .addTag("moduleId", metaData.moduleId)
-          .addTag("valueType", metaData.valueType)
-          .addTag("parameterId", metaData.parameter.parameterId)
-          .addTag("locationId", metaData.location.locationId)
-          .addTag("timeSeriesType", metaData.timeSeriesType)
-          .addTag("timeStepId", metaData.timeStep.timeStepId)
+          .addTag("moduleId", metadataIdsObj.moduleId)
+          .addTag("valueType", metadataIdsObj.valueType.toString)
+          .addTag("parameterId", metadataIdsObj.parameterId)
+          .addTag("locationId", metadataIdsObj.locationId)
+          .addTag("timeSeriesType", metadataIdsObj.timeSeriesType.toString)
+          .addTag("timeStepId", metadataIdsObj.timeStepId)
           // Values
-          .addField("value", tt.value)
+          .addField("value", tt.value.get)
 
         points = points :+ p
       }
@@ -150,33 +155,29 @@ class ScalarAdapter extends Actor with ActorLogging {
         if (isWritten) {
           log.info("Data written to DB Success.")
           log.info("Send Data to Extension Handler: {}", metadataAdapterRef)
-          metadataAdapterRef ! ExtensionHandlerData(data)
-          StoreSuccess(metaData)
+          StoreTimeseriesResponse(Created,  Option(metadataIdsObj.toMetadataIds))
         } else {
-          StoreFailure()
+          StoreTimeseriesResponse(InternalServerError, message = Option("Error while storing data."))
         }
       }) to sender()
 
-    case StoreValidatedTimeSeries(timeSeriesEnvelop) =>
-      log.info("StoreValidatedTimeSeries... {}, {}", sender(), timeSeriesEnvelop)
-      createNetcdfFile()
-
-    case GetTimeSeries(query) =>
+    case GetTimeSeries(query: MetadataIdsObj) =>
+      log.info("GettingTimeSeries... {}", sender())
       val influxdb = InfluxDB.connect("localhost", 8086)
       val database = influxdb.selectDatabase("wdias")
 
       val influxQuery = s"SELECT * FROM observed WHERE " +
         s"moduleId = '${query.moduleId}' " +
         s"AND valueType = '${query.valueType}' " +
-        s"AND parameterId = '${query.parameter.parameterId}' " +
-        s"AND locationId = '${query.location.locationId}' " +
+        s"AND parameterId = '${query.parameterId}' " +
+        s"AND locationId = '${query.locationId}' " +
         s"AND timeSeriesType = '${query.timeSeriesType}' " +
-        s"AND timeStepId = '${query.timeStep.timeStepId}'"
+        s"AND timeStepId = '${query.timeStepId}'"
       log.info("Influx Query: {}", influxQuery)
-      val queryResult = database.query(influxQuery)
+      val queryResult: Future[QueryResult] = database.query(influxQuery)
 
       pipe(queryResult.mapTo[QueryResult] map { result =>
-        Result(createResponse(query, result))
+        GetTimeseriesResponse(OK, Option(createResponse(query, result)))
       }) to sender()
 
     case ActorIdentity(_, Some(ref)) =>
