@@ -193,11 +193,33 @@ class MetadataAdapter extends Actor with ActorLogging {
         }
       }
     case CreateTimeseriesWithIds(metadataIds: MetadataIdsObj) =>
+      val ss = sender()
       log.info("POST Timeseries: {}", metadataIds)
-      val isCreated = TimeSeriesMetadataDAO.create(metadataIds)
-      pipe(isCreated.mapTo[Int] map { result: Int =>
-        result
-      }) to sender()
+      val getLocation = LocationsDAO.findById(metadataIds.locationId).mapTo[Option[Location]]
+      getLocation map { location: Option[Location] =>
+        if(location.isDefined) {
+          val getParameter = ParametersDAO.findById(metadataIds.parameterId).mapTo[Option[ParameterObj]]
+          getParameter map { parameterObj: Option[ParameterObj] =>
+            if(parameterObj.isDefined) {
+              val getTimeStep = TimeStepsDAO.findById(metadataIds.timeStepId).mapTo[Option[TimeStepObj]]
+              getTimeStep map { timeStepObj: Option[TimeStepObj] =>
+                if(timeStepObj.isDefined) {
+                  val isCreated = TimeSeriesMetadataDAO.create(metadataIds)
+                  pipe(isCreated.mapTo[Int] map { result: Int =>
+                    result
+                  }) to sender()
+                } else {
+                  ss ! 0
+                }
+              }
+            } else {
+              ss ! 0
+            }
+          }
+        } else {
+          ss ! 0
+        }
+      }
     case DeleteTimeseriesById(timeseriesId) =>
       log.info("DELETE Timeseries By Id: {}", timeseriesId)
       val isDeleted = TimeSeriesMetadataDAO.deleteById(timeseriesId)
