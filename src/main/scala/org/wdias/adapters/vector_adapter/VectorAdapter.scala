@@ -11,7 +11,6 @@ import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.{GetTimeSeries, StoreTimeSeries, StoreTimeseriesResponse}
 import org.wdias.adapters.vector_adapter.VectorAdapter._
-import org.wdias.extensions.ExtensionHandler.ExtensionHandlerData
 import ucar.ma2.DataType
 import ucar.nc2.{Attribute, Dimension}
 
