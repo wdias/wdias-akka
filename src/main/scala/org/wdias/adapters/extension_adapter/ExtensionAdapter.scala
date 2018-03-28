@@ -14,7 +14,7 @@ object ExtensionAdapter {
   // Extension
   case class GetExtensionById(extensionId: String)
 
-  case class GetExtensions(extensionId: String = "", extension: String = "", function: String = "")
+  case class GetExtensions(extensionId: String = "", extension: String = "", function: String = "", triggerType: String = "")
 
   case class CreateExtension(extensionObj: ExtensionObj)
 
@@ -46,9 +46,9 @@ class ExtensionAdapter extends Actor with ActorLogging {
       pipe(ExtensionsDAO.findById(extensionId).mapTo[Option[ExtensionObj]] map { result: Option[ExtensionObj] =>
         result
       }) to sender()
-    case GetExtensions(extensionId: String, extension: String, function: String) =>
+    case GetExtensions(extensionId: String, extension: String, function: String, triggerType: String) =>
       log.info("GET Query Extensions: {} {}", extensionId)
-      pipe(ExtensionsDAO.find(extensionId, extension, function).mapTo[Seq[ExtensionObj]] map { result: Seq[ExtensionObj] =>
+      pipe(ExtensionsDAO.find(extensionId, extension, function, triggerType).mapTo[Seq[ExtensionObj]] map { result: Seq[ExtensionObj] =>
         result
       }) to sender()
     case CreateExtension(extension: ExtensionObj) =>

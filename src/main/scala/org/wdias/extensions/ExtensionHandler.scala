@@ -1,14 +1,17 @@
 package org.wdias.extensions
 
-import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify, PoisonPill}
+import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
+import org.wdias.adapters.extension_adapter.ExtensionAdapter.GetExtensions
 import org.wdias.constant.TimeSeries
+import akka.pattern.ask
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object ExtensionHandler {
-  case class ExtensionHandlerData(timeSeriesEnvelop: TimeSeries)
-  case class ExtensionHandlerResult(timeSeriesEnvelop: TimeSeries)
+  case class OnChangeTimeseries(timeSeries: TimeSeries)
 }
 
 class ExtensionHandler extends Actor with ActorLogging {
@@ -27,15 +30,44 @@ class ExtensionHandler extends Actor with ActorLogging {
   var validationRef: ActorRef = _
   context.actorSelection("/user/validation") ! Identify(None)
 
+  // TODO: Replace with Redis
+  var onChangeHashMap: scala.collection.immutable.Map[String, List[String]] = scala.collection.immutable.Map()
+
+  def loadOnChangeTriggers(): Unit = {
+    val onChangeExtensionsResponse: Future[Seq[ExtensionObj]] = (extensionAdapterRef ? GetExtensions(triggerType = "OnChange")).mapTo[Seq[ExtensionObj]]
+    onChangeExtensionsResponse  map { onChangeExtensions: Seq[ExtensionObj] =>
+      onChangeExtensions map { onChangeExtension: ExtensionObj =>
+        onChangeExtension.toExtension.trigger.data.map { i: String =>
+          if(onChangeHashMap.isDefinedAt(i)) {
+            val aa: List[String] = onChangeHashMap.get(i).get
+            i ->  (aa :+ onChangeExtension.extensionId)
+          } else {
+            i -> List(onChangeExtension.extensionId)
+          }
+        }.toMap
+      } foreach { bb: Map[String, List[String]] =>
+        log.info("loadOnChangeTriggers: {}", bb)
+        onChangeHashMap = bb
+      }
+    }
+  }
+
   def receive: Receive = {
-    case ExtensionHandlerResult(validatedTimeseriesEnvelop) =>
-      log.info("Got Validated Timeseries {}", validatedTimeseriesEnvelop)
-      sender() ! PoisonPill
+    case OnChangeTimeseries(timeSeries: TimeSeries) =>
+      log.info("On Change Timeseries {}", timeSeries)
+      if(onChangeHashMap.isDefinedAt(timeSeries.timeSeriesId)){
+        log.info("Trigger for OnChange > {}", onChangeHashMap.get(timeSeries.timeSeriesId))
+      } else {
+        log.info("No Triggers for OnChange. {}", onChangeHashMap)
+      }
 
     case ActorIdentity(_, Some(ref)) =>
       log.info("Set Actor (ExtensionHandler): {}", ref.path.name)
       ref.path.name match {
-        case "extensionAdapter" => extensionAdapterRef = ref
+        case "extensionAdapter" => {
+          extensionAdapterRef = ref
+          loadOnChangeTriggers()
+        }
         case "interpolation" => interpolationRef = ref
         case "transformation" => transformationRef = ref
         case "validation" => validationRef = ref

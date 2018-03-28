@@ -5,12 +5,12 @@ import java.time.{LocalDateTime, ZoneId}
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.http.scaladsl.model.StatusCode
-import akka.http.scaladsl.model.StatusCodes.{OK, Created, InternalServerError}
+import akka.http.scaladsl.model.StatusCodes.{Created, InternalServerError, OK}
 import akka.pattern.pipe
 import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
+import org.wdias.adapters.metadata_adapter.MetadataAdapter.OnTimeseriesStore
 import org.wdias.adapters.scalar_adapter.ScalarAdapter._
-import org.wdias.extensions.ExtensionHandler.ExtensionHandlerData
 import ucar.ma2.DataType
 import ucar.nc2.{Attribute, Dimension}
 
@@ -155,6 +155,7 @@ class ScalarAdapter extends Actor with ActorLogging {
         if (isWritten) {
           log.info("Data written to DB Success.")
           log.info("Send Data to Extension Handler: {}", metadataAdapterRef)
+          metadataAdapterRef ! OnTimeseriesStore(timeSeries)
           StoreTimeseriesResponse(Created,  Option(metadataIdsObj.toMetadataIds))
         } else {
           StoreTimeseriesResponse(InternalServerError, message = Option("Error while storing data."))
