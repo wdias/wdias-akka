@@ -36,7 +36,9 @@ class Transformation extends Actor with ActorLogging {
       val ss = sender()
       val transformationExtensionRes: Future[Option[TransformationExtensionObj]] = (ss ? GetExtensionDataById(extensionObj.extension, extensionObj.extensionId)).mapTo[Option[TransformationExtensionObj]]
       transformationExtensionRes map { transformationExtensionObj: Option[TransformationExtensionObj] =>
-        context.actorOf(Props[AggregateAccumulative], name = extensionObj.extensionId)
+        log.info("TransformationExtensionObj > {}", transformationExtensionObj)
+        val a: ActorRef = context.actorOf(Props[AggregateAccumulative], name = extensionObj.extensionId)
+        a ! TriggerExtension(extensionObj)
       }
 
     case TransformationData(extensionObj) =>

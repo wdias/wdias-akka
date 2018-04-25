@@ -15,11 +15,12 @@ import org.wdias.extensions._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object AggregateAccumulative {
-  case class TransformationData(timeSeriesEnvelop: TimeSeries)
 }
 
 class AggregateAccumulative extends Actor with ActorLogging {
   def receive: Receive = {
+    case TriggerExtension(extensionObj: ExtensionObj) =>
+      log.info("TriggerExtension > {}", extensionObj)
     case ActorIdentity(_, None) =>
       context.stop(self)
   }
