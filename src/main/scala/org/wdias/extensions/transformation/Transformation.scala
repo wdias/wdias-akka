@@ -1,6 +1,6 @@
 package org.wdias.extensions.transformation
 
-import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
+import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify, Props}
 import akka.util.Timeout
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.{StoreSuccess, StoreTimeSeries}
 import org.wdias.constant.TimeSeries
@@ -9,11 +9,14 @@ import org.wdias.extensions.transformation.Transformation.TransformationData
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import akka.pattern.{ask, pipe}
+import org.wdias.adapters.extension_adapter.ExtensionAdapter.GetExtensionById
+import org.wdias.extensions.ExtensionHandler.GetExtensionDataById
+import org.wdias.extensions._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Transformation {
-  case class TransformationData(timeSeriesEnvelop: TimeSeries)
+  case class TransformationData(extensionObj: ExtensionObj)
 }
 
 class Transformation extends Actor with ActorLogging {
@@ -28,7 +31,16 @@ class Transformation extends Actor with ActorLogging {
   context.actorSelection("/user/gridAdapter") ! Identify(None)
 
   def receive: Receive = {
-    case TransformationData(timeSeriesEnvelop) =>
+    case TriggerExtension(extensionObj: ExtensionObj) =>
+      log.info("TriggerExtension > {}", extensionObj)
+      val ss = sender()
+      val transformationExtensionRes: Future[Option[TransformationExtensionObj]] = (ss ? GetExtensionDataById(extensionObj.extension, extensionObj.extensionId)).mapTo[Option[TransformationExtensionObj]]
+      transformationExtensionRes map { transformationExtensionObj: Option[TransformationExtensionObj] =>
+        context.actorOf(Props[AggregateAccumulative], name = extensionObj.extensionId)
+      }
+
+    case TransformationData(extensionObj) =>
+      log.info("TransformationData > {}", extensionObj)
       val senderRef = sender()
       /*adapterRef ? StoreTimeSeries(timeSeriesEnvelop) map {
           case StoreSuccess(metadata) =>
@@ -38,8 +50,8 @@ class Transformation extends Actor with ActorLogging {
               println("On StoreFailure")
               senderRef ! "failed"
       }*/
-      val response: Future[StoreSuccess] = (scalarAdapterRef ? StoreTimeSeries(timeSeriesEnvelop)).mapTo[StoreSuccess]
-      pipe(response) to senderRef
+      // val response: Future[StoreSuccess] = (scalarAdapterRef ? StoreTimeSeries(timeSeriesEnvelop)).mapTo[StoreSuccess]
+      // pipe(response) to senderRef
     case ActorIdentity(_, Some(ref)) =>
       log.info("Set Actor (Transformation): {}", ref.path.name)
       ref.path.name match {

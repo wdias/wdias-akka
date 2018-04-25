@@ -2,9 +2,10 @@ package org.wdias.extensions
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
-import org.wdias.adapters.extension_adapter.ExtensionAdapter.GetExtensions
+import org.wdias.adapters.extension_adapter.ExtensionAdapter.{GetExtensionById, GetExtensions, GetTransformationById}
 import org.wdias.constant.TimeSeries
 import akka.pattern.ask
+import org.wdias.extensions.transformation.Transformation.TransformationData
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -12,6 +13,11 @@ import scala.concurrent.duration._
 
 object ExtensionHandler {
   case class OnChangeTimeseries(timeSeries: TimeSeries)
+
+  // TODO: Find a method to get data for a particular extension without couple with ExtensionAdapter
+  // Possible solution may be, get out Extension methods s.t. GetTransformationById from ExtensionAdapter and create
+  // adapter for each extension.
+  case class GetExtensionDataById(extension: String, extensionId: String)
 }
 
 class ExtensionHandler extends Actor with ActorLogging {
@@ -33,13 +39,26 @@ class ExtensionHandler extends Actor with ActorLogging {
   // TODO: Replace with Redis
   var onChangeHashMap: scala.collection.immutable.Map[String, List[String]] = scala.collection.immutable.Map()
 
+  def getExtensionRef(extension: String): ActorRef = {
+    extension match {
+      case "Transformation" =>
+        transformationRef
+      case "Interpolation" =>
+        interpolationRef
+      case "Validation" =>
+        validationRef
+      case _ =>
+        null
+    }
+  }
+
   def loadOnChangeTriggers(): Unit = {
     val onChangeExtensionsResponse: Future[Seq[ExtensionObj]] = (extensionAdapterRef ? GetExtensions(triggerType = "OnChange")).mapTo[Seq[ExtensionObj]]
     onChangeExtensionsResponse  map { onChangeExtensions: Seq[ExtensionObj] =>
       onChangeExtensions map { onChangeExtension: ExtensionObj =>
         onChangeExtension.toExtension.trigger.data.map { i: String =>
           if(onChangeHashMap.isDefinedAt(i)) {
-            val aa: List[String] = onChangeHashMap.get(i).get
+            val aa: List[String] = onChangeHashMap(i)
             i ->  (aa :+ onChangeExtension.extensionId)
           } else {
             i -> List(onChangeExtension.extensionId)
@@ -57,8 +76,27 @@ class ExtensionHandler extends Actor with ActorLogging {
       log.info("On Change Timeseries {}", timeSeries)
       if(onChangeHashMap.isDefinedAt(timeSeries.timeSeriesId)){
         log.info("Trigger for OnChange > {}", onChangeHashMap.get(timeSeries.timeSeriesId))
+        val onChangeExtensions: List[String] = onChangeHashMap(timeSeries.timeSeriesId)
+        onChangeExtensions foreach { extensionId:String =>
+          (extensionAdapterRef ? GetExtensionById(extensionId)).mapTo[Option[ExtensionObj]] map {extensionObj: Option[ExtensionObj] =>
+            log.info("Extension Obj: {}", extensionObj)
+            if(extensionObj.isDefined) {
+              log.info("Send to actor {} >> {}", extensionObj.get.extension, getExtensionRef(extensionObj.get.extension))
+              getExtensionRef(extensionObj.get.extension) ! TriggerExtension(extensionObj.get)
+            } else {
+              log.warning("Unable to find extension onChangeTimeseries: {}", extensionId)
+            }
+          }
+        }
       } else {
         log.info("No Triggers for OnChange. {}", onChangeHashMap)
+      }
+    case GetExtensionDataById(extension: String, extensionId: String) =>
+      extension match {
+        case "Transformation" =>
+          extensionAdapterRef forward GetTransformationById(extensionId)
+        case _ =>
+          null
       }
 
     case ActorIdentity(_, Some(ref)) =>
