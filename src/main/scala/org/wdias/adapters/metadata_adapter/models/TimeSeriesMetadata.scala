@@ -26,8 +26,8 @@ class TimeSeriesMetadataTable(tag: Tag) extends Table[MetadataIdsObj](tag, "TIME
     s => TimeSeriesType.withName(s)
   )
 
-  def timeSeriesId = column[String]("TIME_SERIES_ID", O.PrimaryKey) //
-  def moduleId = column[String]("MODULE_ID", O.Unique, O.Length(255)) //
+  def timeSeriesId = column[String]("TIME_SERIES_ID", O.Length(255)) //  O.PrimaryKey
+  def moduleId = column[String]("MODULE_ID", O.Length(255)) //
   def valueType = column[ValueType]("VALUE_TYPE") //
   def parameterId = column[String]("PARAMETER_ID", O.Length(255)) // Foreign Constrain
   def locationId = column[String]("LOCATION_ID", O.Length(255)) // Foreign Constrain
@@ -36,6 +36,10 @@ class TimeSeriesMetadataTable(tag: Tag) extends Table[MetadataIdsObj](tag, "TIME
   // TODO: Add `tags` support
 
   override def * = (timeSeriesId, moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId) <> (MetadataIdsObj.tupled, MetadataIdsObj.unapply)
+
+  def pk = primaryKey("pk_a", timeSeriesId)
+  // TODO: Not working for the moment
+  // def idx = index("idx_metadata_ids", (moduleId, valueType, parameterId, locationId, timeSeriesType, timeStepId), unique = true)
 
   def parameters = foreignKey("PARAMETER_ID_FK", parameterId, ParametersDAO)(_.parameterId, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Cascade)
 
@@ -62,14 +66,17 @@ object TimeSeriesMetadataDAO extends TableQuery(new TimeSeriesMetadataTable(_)) 
     db.run(action)
   }
 
+  def getTimeseriesHash(timeseriesHash: TimeseriesHash): String = {
+    MessageDigest.getInstance("SHA-256")
+      .digest(timeseriesHash.toString.getBytes("UTF-8"))
+      .map("%02x".format(_)).mkString
+  }
+
   def create(metadataIdsObj: MetadataIdsObj): Future[Int] = {
     val tables = List(TimeSeriesMetadataDAO)
 
     val timeseriesHash = TimeseriesHash(metadataIdsObj.moduleId, metadataIdsObj.valueType.toString, metadataIdsObj.parameterId, metadataIdsObj.locationId, metadataIdsObj.timeSeriesType.toString, metadataIdsObj.timeStepId)
-
-    val timeseriesId = MessageDigest.getInstance("SHA-256")
-      .digest(timeseriesHash.toString.getBytes("UTF-8"))
-      .map("%02x".format(_)).mkString
+    val timeseriesId = this.getTimeseriesHash(timeseriesHash)
     val metadataIdsObj2 = metadataIdsObj.copy(timeSeriesId = timeseriesId)
 
     val existing = db.run(MTable.getTables)
@@ -82,7 +89,26 @@ object TimeSeriesMetadataDAO extends TableQuery(new TimeSeriesMetadataTable(_)) 
     Await.result(f, Duration.Inf)
 
     // db.run(this returning this.map(_.id) into ((acc, id) => acc.copy(id = id)) += location)
-    db.run(this += metadataIdsObj2)
+     db.run(this += metadataIdsObj2)
+  }
+
+  def upsert(metadataIdsObj: MetadataIdsObj): Future[Int] = {
+    val tables = List(TimeSeriesMetadataDAO)
+
+    val timeseriesHash = TimeseriesHash(metadataIdsObj.moduleId, metadataIdsObj.valueType.toString, metadataIdsObj.parameterId, metadataIdsObj.locationId, metadataIdsObj.timeSeriesType.toString, metadataIdsObj.timeStepId)
+    val timeseriesId = this.getTimeseriesHash(timeseriesHash)
+    val metadataIdsObj2 = metadataIdsObj.copy(timeSeriesId = timeseriesId)
+
+    val existing = db.run(MTable.getTables)
+    val f = existing.flatMap(v => {
+      val names = v.map(mt => mt.name.name)
+      val createIfNotExist = tables.filter(table =>
+        !names.contains(table.baseTableRow.tableName)).map(_.schema.create)
+      db.run(DBIO.sequence(createIfNotExist))
+    })
+    Await.result(f, Duration.Inf)
+
+    db.run(this.insertOrUpdate(metadataIdsObj2))
   }
 
   def deleteById(timeSeriesId: String): Future[Int] = {

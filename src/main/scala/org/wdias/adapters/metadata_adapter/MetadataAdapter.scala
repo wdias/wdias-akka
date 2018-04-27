@@ -172,6 +172,7 @@ class MetadataAdapter extends Actor with ActorLogging {
         result
       }) to sender()
     case CreateTimeseries(m: MetadataObj) =>
+      // TODO: NOTE -> There's a problem with foreign key contrains, when inserting data first time for the table using upsert(insertOrUpdate)
       val ss = sender()
       log.info("POST Timeseries: {}, {}", ss, m)
       val createLocation = LocationsDAO.upsert(m.location).mapTo[Int]
@@ -184,7 +185,7 @@ class MetadataAdapter extends Actor with ActorLogging {
               createTimeStep map { isTimeStepCreated: Int =>
                 if(isTimeStepCreated > 0) {
                   val metadataIdsObj = MetadataIdsObj(null, m.moduleId, m.valueType, m.parameter.parameterId, m.location.locationId, m.timeSeriesType, m.timeStep.timeStepId)
-                  val isCreated = TimeSeriesMetadataDAO.create(metadataIdsObj)
+                  val isCreated = TimeSeriesMetadataDAO.upsert(metadataIdsObj)
                   pipe(isCreated.mapTo[Int] map { result: Int =>
                     result
                   }) to ss
