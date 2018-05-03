@@ -1,14 +1,20 @@
 package org.wdias.adapters.extension_adapter
 import akka.pattern.pipe
 import akka.util.Timeout
-import akka.actor.{Actor, ActorLogging}
+import akka.pattern.ask
+import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import org.wdias.adapters.extension_adapter.ExtensionAdapter._
 import org.wdias.adapters.extension_adapter.models.{ExtensionsDAO, TransformationsDAO}
+import org.wdias.adapters.metadata_adapter.MetadataAdapter.{CreateTimeseries, CreateTimeseriesWithIds, GetTimeseriesById}
 import org.wdias.constant._
 import org.wdias.extensions.transformation.TransformationExtensionObj
-import org.wdias.extensions.ExtensionObj
+import org.wdias.extensions.{Extension, ExtensionObj, Trigger}
+
+import scala.collection.mutable.ArrayOps
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.Success
 
 object ExtensionAdapter {
   // Extension
@@ -37,7 +43,10 @@ object ExtensionAdapter {
 
 class ExtensionAdapter extends Actor with ActorLogging {
 
-  implicit val timeout: Timeout = Timeout(15 seconds)
+  implicit val timeout: Timeout = Timeout(25 seconds)
+
+  var metadataAdapterRef: ActorRef = _
+  context.actorSelection("/user/metadataAdapter") ! Identify(None)
 
   def receive: Receive = {
     // Handle Extension MSGs
@@ -77,15 +86,53 @@ class ExtensionAdapter extends Actor with ActorLogging {
       }) to sender()
     case CreateTransformation(transformationExtensionObj: TransformationExtensionObj) =>
       log.info("POST TransformationExtension: {}", transformationExtensionObj)
-      val isCreated = TransformationsDAO.create(transformationExtensionObj)
-      pipe(isCreated.mapTo[Int] map { result: Int =>
-        result
-      }) to sender()
+      val ss = sender()
+      /** In order to avoid additional calls on metadata while running the Extensions, it will enhance the performance of the system,
+        * if it already store the all metadata of timeseries while creating the extensions */
+      val dummyExtension = Extension("", "", "", Trigger("", Array()))
+      val a: List[Future[Int]] = transformationExtensionObj.toTransformationExtension(dummyExtension).variables.toList.map(variable => {
+        if(variable.timeSeriesId.isDefined) {
+          val createVariables: Future[Option[MetadataIdsObj]] = (metadataAdapterRef ? GetTimeseriesById(variable.timeSeriesId.get)).mapTo[Option[MetadataIdsObj]]
+          createVariables map { isCreated: Option[MetadataIdsObj] =>
+            if(isCreated.isDefined) {
+              1
+            } else {
+              -1
+            }
+          }
+        } else if(variable.timeSeries.isDefined) {
+          (metadataAdapterRef ? CreateTimeseries(variable.timeSeries.get.toMetadataObj)).mapTo[Int]
+        } else if(variable.timeSeriesWithIds.isDefined){
+          (metadataAdapterRef ? CreateTimeseriesWithIds(variable.timeSeriesWithIds.get.toMetadataIdsObj)).mapTo[Int]
+        } else {
+          Future(0)
+        }
+      })
+      val aa: Future[List[Int]] = Future.sequence(a)
+      aa map ((bb: List[Int]) => {
+        if(bb.exists(_ < 0)) {
+          ss ! 0
+        } else {
+          val isCreated = TransformationsDAO.create(transformationExtensionObj)
+          isCreated.mapTo[Int] map { result: Int =>
+            ss ! result
+          }
+        }
+      })
     case DeleteTransformationById(transformationExtensionId: String) =>
       log.info("DELETE TransformationExtension By Id: {}", transformationExtensionId)
       val isDeleted = TransformationsDAO.deleteById(transformationExtensionId)
       pipe(isDeleted.mapTo[Int] map { result: Int =>
         result
       }) to sender()
+
+    case ActorIdentity(_, Some(ref)) =>
+      log.info("Set Actor (ExtensionAdapter): {}", ref.path.name)
+      ref.path.name match {
+        case "metadataAdapter" => metadataAdapterRef = ref
+        case default => log.warning("Unknown Actor Identity in ExtensionAdapter: {}", default)
+      }
+    case ActorIdentity(_, None) =>
+      context.stop(self)
   }
 }

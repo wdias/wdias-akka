@@ -172,7 +172,7 @@ class MetadataAdapter extends Actor with ActorLogging {
         result
       }) to sender()
     case CreateTimeseries(m: MetadataObj) =>
-      // TODO: NOTE -> There's a problem with foreign key contrains, when inserting data first time for the table using upsert(insertOrUpdate)
+      // TODO: NOTE -> There's a problem with foreign key constrains, when inserting data first time for the table using upsert(insertOrUpdate)
       val ss = sender()
       log.info("POST Timeseries: {}, {}", ss, m)
       val createLocation = LocationsDAO.upsert(m.location).mapTo[Int]
@@ -201,19 +201,19 @@ class MetadataAdapter extends Actor with ActorLogging {
           ss ! isLocationCreated
         }
       }
-    case CreateTimeseriesWithIds(metadataIds: MetadataIdsObj) =>
+    case CreateTimeseriesWithIds(metadataIdsObj: MetadataIdsObj) =>
       val ss = sender()
-      log.info("POST Timeseries: {}", metadataIds)
-      val getLocation = LocationsDAO.findById(metadataIds.locationId).mapTo[Option[Location]]
+      log.info("POST Timeseries: {}", metadataIdsObj)
+      val getLocation = LocationsDAO.findById(metadataIdsObj.locationId).mapTo[Option[Location]]
       getLocation map { location: Option[Location] =>
         if(location.isDefined) {
-          val getParameter = ParametersDAO.findById(metadataIds.parameterId).mapTo[Option[ParameterObj]]
+          val getParameter = ParametersDAO.findById(metadataIdsObj.parameterId).mapTo[Option[ParameterObj]]
           getParameter map { parameterObj: Option[ParameterObj] =>
             if(parameterObj.isDefined) {
-              val getTimeStep = TimeStepsDAO.findById(metadataIds.timeStepId).mapTo[Option[TimeStepObj]]
+              val getTimeStep = TimeStepsDAO.findById(metadataIdsObj.timeStepId).mapTo[Option[TimeStepObj]]
               getTimeStep map { timeStepObj: Option[TimeStepObj] =>
                 if(timeStepObj.isDefined) {
-                  val isCreated = TimeSeriesMetadataDAO.create(metadataIds)
+                  val isCreated = TimeSeriesMetadataDAO.upsert(metadataIdsObj)
                   pipe(isCreated.mapTo[Int] map { result: Int =>
                     result
                   }) to sender()
