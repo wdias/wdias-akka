@@ -25,11 +25,12 @@ object ExtensionsDAO extends TableQuery(new Extensions(_)) with DBComponent {
     db.run(this.filter(_.extensionId === extensionId).result).map(_.headOption)
   }
 
-  def find(extensionId: String, extension: String, function: String): Future[Seq[ExtensionObj]] = {
+  def find(extensionId: String, extension: String, function: String, triggerType: String): Future[Seq[ExtensionObj]] = {
     val q1 = if(extensionId.isEmpty) this else this.filter(_.extensionId === extensionId)
     val q2 = if(extension.isEmpty) q1 else q1.filter(_.extension === extension)
-    val q3 = if(function.isEmpty) q2 else q1.filter(_.function === function)
-    val action = q3.result
+    val q3 = if(function.isEmpty) q2 else q2.filter(_.function === function)
+    val q4 = if(triggerType.isEmpty) q3 else q3.filter(_.triggerType === triggerType)
+    val action = q4.result
     db.run(action)
   }
 

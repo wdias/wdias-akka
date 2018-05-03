@@ -49,6 +49,17 @@ object LocationsDAO extends TableQuery(new Locations(_)) with DBComponent {
   }
 
   def upsert(location: Location): Future[Int] = {
+    val tables = List(LocationsDAO)
+
+    val existing = db.run(MTable.getTables)
+    val f = existing.flatMap( v => {
+      val names = v.map(mt => mt.name.name)
+      val createIfNotExist = tables.filter( table =>
+        !names.contains(table.baseTableRow.tableName)).map(_.schema.create)
+      db.run(DBIO.sequence(createIfNotExist))
+    })
+    Await.result(f, Duration.Inf)
+
     db.run(this.insertOrUpdate(location))
   }
 

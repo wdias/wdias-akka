@@ -74,7 +74,7 @@ trait TransformationRoutes extends TransformationProtocols {
             logTransformationRoutes.info("/extension/transformation POST request: > {}", transformationExtension.variables)
             val response: Future[Int] = (extensionAdapterRef ? CreateExtension(transformationExtension.toExtensionObj)).mapTo[Int]
             onSuccess(response) { isCreated: Int =>
-              if(isCreated > 0) {
+              if(isCreated > 0) {Transformation
                 val response2: Future[Int] = (extensionAdapterRef ? CreateTransformation(transformationExtension.toTransformationExtensionObj)).mapTo[Int]
                 onSuccess(response2) { isCreated2: Int =>
                   complete(Created -> isCreated2.toString)

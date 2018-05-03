@@ -1,12 +1,13 @@
 package org.wdias.adapters.metadata_adapter
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.pattern.pipe
 import akka.util.Timeout
 import org.wdias.adapters.metadata_adapter.MetadataAdapter._
 import org.wdias.adapters.metadata_adapter.models._
 import org.wdias.constant.TimeSeriesType.TimeSeriesType
 import org.wdias.constant._
+import org.wdias.extensions.ExtensionHandler.OnChangeTimeseries
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -71,11 +72,18 @@ object MetadataAdapter {
 
   case class DeleteTimeseriesById(timeseriesId: String)
 
+  // Timeseries Events
+  case class OnTimeseriesStore(timeSeries: TimeSeries)
+
+  case class IdentifyExtensionHandler(extensionHandlerRef: ActorRef)
+
 }
 
 class MetadataAdapter extends Actor with ActorLogging {
 
   implicit val timeout: Timeout = Timeout(15 seconds)
+
+  var extensionHandlerRef: ActorRef = _
 
   def receive: Receive = {
     // Handle Location -> Point MSGs
@@ -164,6 +172,7 @@ class MetadataAdapter extends Actor with ActorLogging {
         result
       }) to sender()
     case CreateTimeseries(m: MetadataObj) =>
+      // TODO: NOTE -> There's a problem with foreign key constrains, when inserting data first time for the table using upsert(insertOrUpdate)
       val ss = sender()
       log.info("POST Timeseries: {}, {}", ss, m)
       val createLocation = LocationsDAO.upsert(m.location).mapTo[Int]
@@ -176,7 +185,7 @@ class MetadataAdapter extends Actor with ActorLogging {
               createTimeStep map { isTimeStepCreated: Int =>
                 if(isTimeStepCreated > 0) {
                   val metadataIdsObj = MetadataIdsObj(null, m.moduleId, m.valueType, m.parameter.parameterId, m.location.locationId, m.timeSeriesType, m.timeStep.timeStepId)
-                  val isCreated = TimeSeriesMetadataDAO.create(metadataIdsObj)
+                  val isCreated = TimeSeriesMetadataDAO.upsert(metadataIdsObj)
                   pipe(isCreated.mapTo[Int] map { result: Int =>
                     result
                   }) to ss
@@ -192,17 +201,55 @@ class MetadataAdapter extends Actor with ActorLogging {
           ss ! isLocationCreated
         }
       }
-    case CreateTimeseriesWithIds(metadataIds: MetadataIdsObj) =>
-      log.info("POST Timeseries: {}", metadataIds)
-      val isCreated = TimeSeriesMetadataDAO.create(metadataIds)
-      pipe(isCreated.mapTo[Int] map { result: Int =>
-        result
-      }) to sender()
+    case CreateTimeseriesWithIds(metadataIdsObj: MetadataIdsObj) =>
+      val ss = sender()
+      log.info("POST Timeseries: {}", metadataIdsObj)
+      val getLocation = LocationsDAO.findById(metadataIdsObj.locationId).mapTo[Option[Location]]
+      getLocation map { location: Option[Location] =>
+        if(location.isDefined) {
+          val getParameter = ParametersDAO.findById(metadataIdsObj.parameterId).mapTo[Option[ParameterObj]]
+          getParameter map { parameterObj: Option[ParameterObj] =>
+            if(parameterObj.isDefined) {
+              val getTimeStep = TimeStepsDAO.findById(metadataIdsObj.timeStepId).mapTo[Option[TimeStepObj]]
+              getTimeStep map { timeStepObj: Option[TimeStepObj] =>
+                if(timeStepObj.isDefined) {
+                  val isCreated = TimeSeriesMetadataDAO.upsert(metadataIdsObj)
+                  pipe(isCreated.mapTo[Int] map { result: Int =>
+                    result
+                  }) to sender()
+                } else {
+                  ss ! 0
+                }
+              }
+            } else {
+              ss ! 0
+            }
+          }
+        } else {
+          ss ! 0
+        }
+      }
     case DeleteTimeseriesById(timeseriesId) =>
       log.info("DELETE Timeseries By Id: {}", timeseriesId)
       val isDeleted = TimeSeriesMetadataDAO.deleteById(timeseriesId)
       pipe(isDeleted.mapTo[Int] map { result: Int =>
         result
       }) to sender()
+
+    // Handle Timeseries Event MSGs
+    case OnTimeseriesStore(timeSeries: TimeSeries) =>
+      extensionHandlerRef forward OnChangeTimeseries(timeSeries)
+
+    case IdentifyExtensionHandler(actorRef: ActorRef) =>
+      extensionHandlerRef = actorRef
+      context.actorSelection("/user/extensionHandler") ! Identify(None)
+    case ActorIdentity(_, Some(ref)) =>
+      log.info("Set Actor (MetadataAdapter): {}", ref.path.name)
+      ref.path.name match {
+        case "extensionHandler" => extensionHandlerRef = ref
+        case default => log.warning("Unknown Actor Identity in MetadataAdapter: {}", default)
+      }
+    case ActorIdentity(_, None) =>
+      context.stop(self)
   }
 }

@@ -42,6 +42,9 @@ case class ExtensionObj(
   def toExtension: Extension = Extension(this.extensionId, this.extension, this.function, Trigger(this.triggerType, this.triggerData.split(",").map(_.trim)))
 }
 
+// Internal Triggering
+case class TriggerExtension(extensionObj: ExtensionObj)
+
 trait BaseExtensionProtocols extends Protocols {
   implicit val variableFormat: RootJsonFormat[Variable] = jsonFormat4(Variable.apply)
   implicit val triggerFormat: RootJsonFormat[Trigger] = jsonFormat2(Trigger.apply)

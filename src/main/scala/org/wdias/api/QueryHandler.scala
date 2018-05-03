@@ -2,6 +2,7 @@ package org.wdias.api
 
 import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 import akka.util.Timeout
+import org.wdias.adapters.metadata_adapter.MetadataAdapter.IdentifyExtensionHandler
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.StoreTimeSeries
 import org.wdias.constant.TimeSeries
 
@@ -36,7 +37,11 @@ class QueryHandler extends Actor with ActorLogging {
     case ActorIdentity(_, Some(ref)) =>
       log.info("Set Actor (QueryHandler): {}", ref.path.name)
       ref.path.name match {
-        case "metadataAdapter" => metadataAdapterRef = ref
+        case "metadataAdapter" => {
+          metadataAdapterRef = ref
+          // TODO: Expect this actor will initial after ExtensionHandler
+          metadataAdapterRef ! IdentifyExtensionHandler(metadataAdapterRef)
+        }
         case "exportJSON" => exportJSONRef = ref
         case "exportCSV" => exportCSVRef = ref
         case default => log.warning("Unknown Actor Identity in QueryHandler: {}", default)

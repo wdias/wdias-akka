@@ -9,9 +9,7 @@ import akka.http.scaladsl.model.StatusCodes.{Created, InternalServerError}
 import akka.pattern.pipe
 import akka.util.Timeout
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
-import org.wdias.adapters.scalar_adapter.ScalarAdapter.{GetTimeSeries, StoreTimeSeries, StoreTimeseriesResponse}
-import org.wdias.adapters.vector_adapter.VectorAdapter._
-import org.wdias.extensions.ExtensionHandler.ExtensionHandlerData
+import org.wdias.adapters.vector_adapter.VectorAdapter.{GetTimeSeries, StoreTimeSeries, StoreTimeseriesResponse}
 import ucar.ma2.DataType
 import ucar.nc2.{Attribute, Dimension}
 
