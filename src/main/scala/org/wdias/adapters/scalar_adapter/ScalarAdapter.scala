@@ -27,9 +27,9 @@ import scala.concurrent.duration._
 
 object ScalarAdapter {
 
-  case class StoreTimeSeries(timeSeries: TimeSeries)
+  case class StoreTimeSeries(timeSeries: TimeSeries, resType: Any = StoreTimeseriesResponse)
 
-  case class GetTimeSeries(metadataIdsObj: MetadataIdsObj)
+  case class GetTimeSeries(metadataIdsObj: MetadataIdsObj, resType: Any = GetTimeseriesResponse)
 
   case class StoreTimeseriesResponse(statusCode: StatusCode, metadataIds: Option[MetadataIds] = Option(null), message: Option[String] = Option(null))
 
@@ -125,7 +125,7 @@ class ScalarAdapter extends Actor with ActorLogging {
   }
 
   def receive: Receive = {
-    case StoreTimeSeries(timeSeries: TimeSeries) =>
+    case StoreTimeSeries(timeSeries: TimeSeries, resType: Any) =>
       log.info("StoringTimeSeries... {}", sender())
       val influxdb = InfluxDB.connect("localhost", 8086)
       val database = influxdb.selectDatabase("wdias")
@@ -150,19 +150,26 @@ class ScalarAdapter extends Actor with ActorLogging {
       }
       log.info("Created points {}", points)
 
-      pipe(database.bulkWrite(points, precision = Precision.SECONDS).mapTo[Boolean] map { isWritten =>
+      pipe(future = database.bulkWrite(points, precision = Precision.SECONDS).mapTo[Boolean] map { isWritten =>
         println("Written to the DB: " + isWritten)
         if (isWritten) {
           log.info("Data written to DB Success.")
           log.info("Send Data to Extension Handler: {}", metadataAdapterRef)
           metadataAdapterRef ! OnTimeseriesStore(timeSeries)
-          StoreTimeseriesResponse(Created,  Option(metadataIdsObj.toMetadataIds))
+          resType match {
+            case MetadataIds =>
+              metadataIdsObj.toMetadataIds
+            case MetadataIdsObj =>
+              metadataIdsObj
+            case _ =>
+              StoreTimeseriesResponse(Created, Option(metadataIdsObj.toMetadataIds))
+          }
         } else {
           StoreTimeseriesResponse(InternalServerError, message = Option("Error while storing data."))
         }
       }) to sender()
 
-    case GetTimeSeries(query: MetadataIdsObj) =>
+    case GetTimeSeries(query: MetadataIdsObj, resType: Any) =>
       log.info("GettingTimeSeries... {}", sender())
       val influxdb = InfluxDB.connect("localhost", 8086)
       val database = influxdb.selectDatabase("wdias")
@@ -177,8 +184,12 @@ class ScalarAdapter extends Actor with ActorLogging {
       log.info("Influx Query: {}", influxQuery)
       val queryResult: Future[QueryResult] = database.query(influxQuery)
 
-      pipe(queryResult.mapTo[QueryResult] map { result =>
-        GetTimeseriesResponse(OK, Option(createResponse(query, result)))
+      pipe(queryResult.mapTo[QueryResult] map { result: QueryResult =>
+        if(resType == TimeSeries) {
+          createResponse(query, result)
+        } else {
+          GetTimeseriesResponse(OK, Option(createResponse(query, result)))
+        }
       }) to sender()
 
     case ActorIdentity(_, Some(ref)) =>

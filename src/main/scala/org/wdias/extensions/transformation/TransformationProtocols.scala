@@ -52,7 +52,7 @@ case class TransformationExtensionObj(
     val options = this.options.parseJson
 
     import MyJsonProtocol._
-    val variables = this.variables.parseJson.convertTo[Array[Variable]]
+    val variables: Array[Variable] = this.variables.parseJson.convertTo[Array[Variable]]
 
     TransformationExtension(this.extensionId, e.extension, e.function, e.trigger, variables, this.inputVariables.split(","), this.outputVariables.split(","), options)
   }

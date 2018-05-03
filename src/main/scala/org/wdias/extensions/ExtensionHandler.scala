@@ -5,7 +5,7 @@ import akka.util.Timeout
 import org.wdias.adapters.extension_adapter.ExtensionAdapter.{GetExtensionById, GetExtensions, GetTransformationById}
 import org.wdias.constant.TimeSeries
 import akka.pattern.ask
-import org.wdias.extensions.transformation.Transformation.TransformationData
+import org.wdias.extensions.transformation.Transformation.TriggerTransformation
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global

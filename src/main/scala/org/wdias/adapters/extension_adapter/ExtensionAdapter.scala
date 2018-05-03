@@ -92,6 +92,7 @@ class ExtensionAdapter extends Actor with ActorLogging {
       val dummyExtension = Extension("", "", "", Trigger("", Array()))
       val a: List[Future[Int]] = transformationExtensionObj.toTransformationExtension(dummyExtension).variables.toList.map(variable => {
         if(variable.timeSeriesId.isDefined) {
+          // TODO: Store Timeseries with complete metadata inside variable
           val createVariables: Future[Option[MetadataIdsObj]] = (metadataAdapterRef ? GetTimeseriesById(variable.timeSeriesId.get)).mapTo[Option[MetadataIdsObj]]
           createVariables map { isCreated: Option[MetadataIdsObj] =>
             if(isCreated.isDefined) {
@@ -103,6 +104,7 @@ class ExtensionAdapter extends Actor with ActorLogging {
         } else if(variable.timeSeries.isDefined) {
           (metadataAdapterRef ? CreateTimeseries(variable.timeSeries.get.toMetadataObj)).mapTo[Int]
         } else if(variable.timeSeriesWithIds.isDefined){
+          // TODO: Store Timeseries with complete metadata inside variable
           (metadataAdapterRef ? CreateTimeseriesWithIds(variable.timeSeriesWithIds.get.toMetadataIdsObj)).mapTo[Int]
         } else {
           Future(0)

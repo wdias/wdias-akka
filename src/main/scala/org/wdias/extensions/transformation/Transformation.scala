@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify, Props
 import akka.util.Timeout
 import org.wdias.adapters.scalar_adapter.ScalarAdapter.{StoreSuccess, StoreTimeSeries}
 import org.wdias.constant.TimeSeries
-import org.wdias.extensions.transformation.Transformation.TransformationData
+import org.wdias.extensions.transformation.Transformation.{SetAdapterRef, TriggerTransformation}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -16,7 +16,8 @@ import org.wdias.extensions._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Transformation {
-  case class TransformationData(extensionObj: ExtensionObj)
+  case class TriggerTransformation(extensionObj: ExtensionObj, transformationExtensionObj: TransformationExtensionObj)
+  case class SetAdapterRef(scalarAdapter: ActorRef = null, vectorAdapter: ActorRef = null, gridAdapter: ActorRef = null)
 }
 
 class Transformation extends Actor with ActorLogging {
@@ -37,11 +38,12 @@ class Transformation extends Actor with ActorLogging {
       val transformationExtensionRes: Future[Option[TransformationExtensionObj]] = (ss ? GetExtensionDataById(extensionObj.extension, extensionObj.extensionId)).mapTo[Option[TransformationExtensionObj]]
       transformationExtensionRes map { transformationExtensionObj: Option[TransformationExtensionObj] =>
         log.info("TransformationExtensionObj > {}", transformationExtensionObj)
-        val a: ActorRef = context.actorOf(Props[AggregateAccumulative], name = extensionObj.extensionId)
-        a ! TriggerExtension(extensionObj)
+        val extensionActorRef: ActorRef = context.actorOf(Props[AggregateAccumulative], name = extensionObj.extensionId)
+        extensionActorRef ! SetAdapterRef(scalarAdapterRef, vectorAdapterRef, gridAdapterRef)
+        extensionActorRef ! TriggerTransformation(extensionObj, transformationExtensionObj.get)
       }
 
-    case TransformationData(extensionObj) =>
+    case TriggerTransformation(extensionObj, transformationExtensionObj) =>
       log.info("TransformationData > {}", extensionObj)
       val senderRef = sender()
       /*adapterRef ? StoreTimeSeries(timeSeriesEnvelop) map {
